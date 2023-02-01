@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNCSniffer.Renderer", "VNCSniffer.Renderer\VNCSniffer.Renderer.csproj", "{A977F63A-3D07-4C08-8D47-44CF2C1E987F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNCSniffer", "VNCSniffer\VNCSniffer.csproj", "{306F8554-A442-430E-BA5B-D87114ABC670}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{306F8554-A442-430E-BA5B-D87114ABC670}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{306F8554-A442-430E-BA5B-D87114ABC670}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{306F8554-A442-430E-BA5B-D87114ABC670}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{306F8554-A442-430E-BA5B-D87114ABC670}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2A0D6862-AB97-44AA-BACF-BE4A227BF428}
+	EndGlobalSection
+EndGlobal
