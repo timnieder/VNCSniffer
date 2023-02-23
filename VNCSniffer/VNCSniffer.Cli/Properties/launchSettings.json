@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "VNCSniffer.Cli": {
+      "commandName": "Project"
+    },
+    "File": {
+      "commandName": "Project",
+      "commandLineArgs": "\"E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\tigerVNCUbuntu.pcapng\""
+    }
+  }
+}
