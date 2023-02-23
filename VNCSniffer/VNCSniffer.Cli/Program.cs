@@ -1,12 +1,8 @@
-﻿using Microsoft.VisualBasic;
-using PacketDotNet;
+﻿using PacketDotNet;
 using SharpPcap;
 using SharpPcap.LibPcap;
-using System.Data;
 using System.Diagnostics;
 using System.Net;
-using System.Numerics;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
 namespace VNCSniffer.Cli
@@ -99,67 +95,30 @@ namespace VNCSniffer.Cli
 
         private static bool ParseMessage(IPAddress source, IPAddress dest, byte[] data)
         {
-            if (connection.State == State.Unknown)
+            var message = "";
+            var result = false;
+            // Our connection isnt initialized yet (or so we think)
+            // Therefore we check from the laststate if any messages can be parsed
+            if (connection.LastState < State.Initialized)
             {
-                var str = Encoding.Default.GetString(data);
-                if (str.StartsWith("RFB")) // RFB
+                var ev = new Messages.MessageEvent(source, dest, connection, data);
+                for (var i = connection.LastState + 1; i < State.Initialized; i++)
                 {
-                    if (connection.ProtocolVersion == null) // version not yet set, state unknown
+                    var handled = Messages.Handlers[i](ev);
+                    if (handled)
                     {
-                        connection.ProtocolVersion = str;
+                        connection.LastState = i;
+                        return true;
                     }
-                    else // version set, therefore we got a message before, this is the client
-                    {
-                        connection.SetClientServer(source, dest); // sent by client
-                    }
-
-                    connection.LogData(source, dest, $"ProtocolVersion: {str.TrimEnd()}");
-                    return true;
                 }
-
-                // Security Types
-                var numberOfSecurityTypes = data[0];
-                if (data.Length == (1 + numberOfSecurityTypes))
-                {
-                    var encodings = string.Join(" ", data.Skip(1));
-                    connection.SetClientServer(dest, source); // sent by server
-                    connection.LogData(source, dest, $"Security Types ({numberOfSecurityTypes}): {encodings}");
-                    return true;
-                }
-
-                // VNC Auth
-                if (data.Length == 16)
-                {
-                    if (connection.Challenge != null) // already got a challenge, this is the response 
-                    {
-                        connection.ChallengeResponse = data;
-                        connection.SetClientServer(source, dest); // sent by client
-                        connection.LogData(source, dest, $"Response: {BitConverter.ToString(data)}");
-                    }
-                    else // no challenge cached
-                    {
-                        var unsure = "?";
-                        if (connection.Client == null)
-                            unsure = "";
-                        connection.Challenge = data;
-                        connection.LogData(source, dest, $"Challenge{unsure}: {BitConverter.ToString(data)}");
-                    }
-                    return true;
-                }
-                // Auth result
-                if (data.Length == 4)
-                {
-                    // sent by server
-                    connection.SetClientServer(dest, source);
-                }
-
-                //TODO: tryparse c2s/s2c to see if we're initialized already
+                //TODO: if we hit the end without a valid parsed msgs, are we inited?
             }
-            else if (connection.State == State.Initialized)
+            else
             {
-                //TODO: parse c2s/s2c messages
+                // TODO: parse c2s/s2c messages
             }
-            return false;
+            //connection.LogData(source, dest, message);
+            return result;
         }
     }
 }

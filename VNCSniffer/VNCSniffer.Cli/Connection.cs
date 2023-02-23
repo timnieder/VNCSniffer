@@ -7,17 +7,9 @@ using System.Threading.Tasks;
 
 namespace VNCSniffer.Cli
 {
-    public enum State
-    {
-        Unknown,
-        ProtocolHandshake,
-        Handshake,
-        Initialized
-    }
-
     public class Connection
     {
-        public State State = State.Unknown;
+        public State LastState = State.Unknown;
 
         public string? ProtocolVersion;
         public IPAddress? Client;
