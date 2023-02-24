@@ -180,7 +180,149 @@ namespace VNCSniffer.Cli
                 return false;
             var name = Encoding.Default.GetString(ev.Data[24..]);
             ev.Connection.SetClientServer(ev.Destination, ev.Source);
+            ev.Connection.Width = width;
+            ev.Connection.Height = height;
+            ev.Connection.Format = format;
             ev.Log($"ServerInit: Width ({width}), Height ({height}), Name ({name})");
+            return true;
+        }
+
+        // Client To Server Messages
+        public static bool HandleClientSetPixelFormat(MessageEvent ev)
+        {
+            // Message-Type (1) + Padding (3) + PixelFormat(16) = 20
+            if (ev.Data.Length != 20)
+                return false;
+
+            if (ev.Data[0] != 0) // Message Type 0
+                return false;
+
+            //TODO: padding check?
+            ev.Log("SetPixelFormat");
+            return true;
+        }
+
+        public static bool HandleClientSetEncodings(MessageEvent ev)
+        {
+            // Message-Type (1) + Padding (1) + NumberOfEncodings (2) + ?*4 >= 4
+            if (ev.Data.Length < 4)
+                return false;
+
+            if (ev.Data[0] != 1) // Message Type 1
+                return false;
+
+            //TODO: padding check?
+            ev.Log("SetEncodings");
+            return true;
+        }
+
+        public static bool HandleClientFramebufferUpdateRequest(MessageEvent ev)
+        {
+            // Message-Type (1) + Incremental (1) + X (2) + Y (2) + W (2) + H (2) = 10
+            if (ev.Data.Length != 10)
+                return false;
+
+            if (ev.Data[0] != 3) // Message Type 3
+                return false;
+
+            ev.Log("FramebufferUpdateRequest");
+            return true;
+        }
+
+        public static bool HandleClientKeyEvent(MessageEvent ev)
+        {
+            // Message-Type (1) + Down (1) + Padding (2) + Key (4) = 8
+            if (ev.Data.Length != 8)
+                return false;
+
+            if (ev.Data[0] != 4) // Message Type 4
+                return false;
+
+            //TODO: padding check?
+            ev.Log("KeyEvent");
+            return true;
+        }
+
+        public static bool HandleClientPointerEvent(MessageEvent ev)
+        {
+            // Message-Type (1) + Mask (1) + X (2) + Y (2) = 6
+            if (ev.Data.Length != 6)
+                return false;
+
+            if (ev.Data[0] != 5) // Message Type 5
+                return false;
+
+            ev.Log("PointerEvent");
+            return true;
+        }
+
+        public static bool HandleClientClientCutText(MessageEvent ev)
+        {
+            // Message-Type (1) + Padding (3) + Length (4) + ?*1 >= 8
+            if (ev.Data.Length < 8)
+                return false;
+
+            if (ev.Data[0] != 6) // Message Type 6
+                return false;
+
+            //TODO: padding check?
+            ev.Log("ClientCutText");
+            return true;
+        }
+
+        // Server To Client Messages
+        public static bool HandleServerFramebufferUpdate(MessageEvent ev)
+        {
+            // Message-Type (1) + Padding (1) + NumberOfRectangles (2) + ?*12 >= 4
+            if (ev.Data.Length < 4)
+                return false;
+
+            if (ev.Data[0] != 0) // Message Type 0
+                return false;
+
+            //TODO: padding check?
+            ev.Log("FramebufferUpdate");
+            return true;
+        }
+
+        public static bool HandleServerSetColorMapEntries(MessageEvent ev)
+        {
+            // Message-Type (1) + Padding (1) + FirstColor (2) + NumberOfColors (2) + ?*6 >= 6
+            if (ev.Data.Length < 6)
+                return false;
+
+            if (ev.Data[0] != 1) // Message Type 1
+                return false;
+
+            //TODO: padding check?
+            ev.Log("SetColorMapEntries");
+            return true;
+        }
+
+        public static bool HandleServerBell(MessageEvent ev)
+        {
+            // Message-Type (1) = 1
+            if (ev.Data.Length != 1)
+                return false;
+
+            if (ev.Data[0] != 2) // Message Type 2
+                return false;
+
+            ev.Log("Bell");
+            return true;
+        }
+
+        public static bool HandleServerServerCutText(MessageEvent ev)
+        {
+            // Message-Type (1) + Padding (3) + Length (4) + ?*1 >= 8
+            if (ev.Data.Length < 8)
+                return false;
+
+            if (ev.Data[0] != 3) // Message Type 3
+                return false;
+
+            //TODO: padding check?
+            ev.Log("ServerCutText");
             return true;
         }
     }

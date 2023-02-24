@@ -15,6 +15,10 @@ namespace VNCSniffer.Cli
         public IPAddress? Client;
         public IPAddress? Server;
 
+        public ushort? Width;
+        public ushort? Height;
+        public PixelFormat? Format;
+
         public byte[]? Challenge;
         public byte[]? ChallengeResponse;
 
