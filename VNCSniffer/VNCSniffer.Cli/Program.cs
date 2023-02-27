@@ -1,15 +1,16 @@
 ﻿using PacketDotNet;
+using PacketDotNet.Connections;
 using SharpPcap;
 using SharpPcap.LibPcap;
 using System.Diagnostics;
 using System.Net;
-using System.Text;
 
 namespace VNCSniffer.Cli
 {
     public class Cli
     {
-        static Connection connection = new();
+        static Dictionary<TcpConnection, Connection> Connections = new();
+        private static TcpConnectionManager tcpConnectionManager = new();
         public static void Main(string[] args)
         {
             Debug.AutoFlush = true;
@@ -50,25 +51,45 @@ namespace VNCSniffer.Cli
             }
             Console.WriteLine($"Using device {device.Description} ({device.Name})");
 
+            tcpConnectionManager.OnConnectionFound += TcpConnectionManager_OnConnectionFound;
+
             //TODO: create better filter? also let user select port?
             device.Open(DeviceModes.Promiscuous); //TODO: read timeout ms
             var filter = "tcp and " +
                     "(port 5900 or " +
                     "port 5901)";
             device.Filter = filter;
-            device.OnPacketArrival += PacketHandler;
+            //device.OnPacketArrival += PacketHandler;
+            device.OnPacketArrival += Device_OnPacketArrival;
             Console.WriteLine("Listening...");
             device.Capture();
             device.Close();
         }
 
-        private static void PacketHandler(object s, PacketCapture packet)
+        private static void Device_OnPacketArrival(object sender, PacketCapture e)
         {
-            var raw = packet.GetPacket();
-            var p = Packet.ParsePacket(raw.LinkLayerType, raw.Data);
-            var ip = p.Extract<IPPacket>();
-            var tcp = p.Extract<TcpPacket>();
+            var rawPacket = e.GetPacket();
+            var p = Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
 
+            var tcpPacket = p.Extract<TcpPacket>();
+
+            if (tcpPacket != null)
+            {
+                // Pass the packet to the connection manager
+                tcpConnectionManager.ProcessPacket(rawPacket.Timeval, tcpPacket);
+            }
+        }
+
+        private static void TcpConnectionManager_OnConnectionFound(TcpConnection c)
+        {
+            if (!Connections.TryGetValue(c, out _))
+                Connections.Add(c, new());
+
+            c.OnPacketReceived += PacketHandler;
+        }
+
+        private static void PacketHandler(PosixTimeval timeval, TcpConnection tcpConnection, TcpFlow flow, TcpPacket tcp)
+        {
             if (!tcp.HasPayloadData)
                 return;
 
@@ -80,27 +101,33 @@ namespace VNCSniffer.Cli
             if (msg == null || msg.Length == 0)
                 return;
 
+            var ip = (IPPacket)tcp.ParentPacket;
             var source = ip.SourceAddress;
             var dest = ip.DestinationAddress;
 
-            var parsed = ParseMessage(source, dest, msg);
+            if (!Connections.TryGetValue(tcpConnection, out var connection))
+            {
+                Debug.Assert(connection != null, "No connection found for tcp connection.");
+                return;
+            }
+
+            var parsed = ParseMessage(connection, source, dest, msg);
             if (parsed)
                 return;
 
             var data = BitConverter.ToString(msg);
             if (data.Length > 50)
                 data = data.Substring(0, 50) + "...";
-            Console.WriteLine($"{source}:{tcp.SourcePort}->{dest}:{tcp.DestinationPort}: {data}");
+            Console.WriteLine($"[{tcp.SequenceNumber}] {source}:{tcp.SourcePort}->{dest}:{tcp.DestinationPort}: {data}");
         }
 
-        private static bool ParseMessage(IPAddress source, IPAddress dest, byte[] data)
+        private static bool ParseMessage(Connection connection, IPAddress source, IPAddress dest, byte[] data)
         {
-            var message = "";
             var result = false;
             // Our connection isnt initialized yet (or so we think)
             // Therefore we check from the laststate if any messages can be parsed
             var ev = new Messages.MessageEvent(source, dest, connection, data);
-            if (connection.LastState < State.Initialized - 1)
+            if (connection.LastState < State.Initialized)
             {
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
                 {
@@ -112,46 +139,46 @@ namespace VNCSniffer.Cli
                     }
                 }
                 //TODO: if we hit the end without a valid parsed msgs, are we inited?
+                connection.LastState = State.Initialized;
             }
-            else
-            {
-                var checkClientMsgs = true;
-                var checkServerMsgs = true;
-                // TODO: parse c2s/s2c messages
-                if (source.Equals(connection.Client))
-                {
-                    // source is the client => only check client msgs
-                    checkServerMsgs = false;
-                }
-                else if (source.Equals(connection.Server))
-                {
-                    // source is the server => only check server msgs
-                    checkClientMsgs = false;
-                }
 
-                if (checkClientMsgs)
+            // parse c2s/s2c messages
+            var checkClientMsgs = true;
+            var checkServerMsgs = true;
+            if (source.Equals(connection.Client))
+            {
+                // source is the client => only check client msgs
+                checkServerMsgs = false;
+            }
+            else if (source.Equals(connection.Server))
+            {
+                // source is the server => only check server msgs
+                checkClientMsgs = false;
+            }
+
+            if (checkClientMsgs)
+            {
+                foreach (var clientMsgHandler in Messages.ClientHandlers)
                 {
-                    foreach (var clientMsgHandler in Messages.ClientHandlers)
+                    var handled = clientMsgHandler(ev);
+                    if (handled)
                     {
-                        var handled = clientMsgHandler(ev);
-                        if (handled)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                if (checkServerMsgs)
-                {
-                    foreach (var serverMsgHandler in Messages.ServerHandlers)
-                    {
-                        var handled = serverMsgHandler(ev);
-                        if (handled)
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
+            if (checkServerMsgs)
+            {
+                foreach (var serverMsgHandler in Messages.ServerHandlers)
+                {
+                    var handled = serverMsgHandler(ev);
+                    if (handled)
+                    {
+                        return true;
+                    }
+                }
+            }
+
             //connection.LogData(source, dest, message);
             return result;
         }
