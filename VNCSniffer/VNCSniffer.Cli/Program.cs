@@ -99,9 +99,9 @@ namespace VNCSniffer.Cli
             var result = false;
             // Our connection isnt initialized yet (or so we think)
             // Therefore we check from the laststate if any messages can be parsed
-            if (connection.LastState < State.Initialized)
+            var ev = new Messages.MessageEvent(source, dest, connection, data);
+            if (connection.LastState < State.Initialized - 1)
             {
-                var ev = new Messages.MessageEvent(source, dest, connection, data);
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
                 {
                     var handled = Messages.Handlers[i](ev);
@@ -115,7 +115,42 @@ namespace VNCSniffer.Cli
             }
             else
             {
+                var checkClientMsgs = true;
+                var checkServerMsgs = true;
                 // TODO: parse c2s/s2c messages
+                if (source.Equals(connection.Client))
+                {
+                    // source is the client => only check client msgs
+                    checkServerMsgs = false;
+                }
+                else if (source.Equals(connection.Server))
+                {
+                    // source is the server => only check server msgs
+                    checkClientMsgs = false;
+                }
+
+                if (checkClientMsgs)
+                {
+                    foreach (var clientMsgHandler in Messages.ClientHandlers)
+                    {
+                        var handled = clientMsgHandler(ev);
+                        if (handled)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                if (checkServerMsgs)
+                {
+                    foreach (var serverMsgHandler in Messages.ServerHandlers)
+                    {
+                        var handled = serverMsgHandler(ev);
+                        if (handled)
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
             //connection.LogData(source, dest, message);
             return result;

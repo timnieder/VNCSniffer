@@ -44,6 +44,7 @@ namespace VNCSniffer.Cli
             public void Log(string text) => Connection.LogData(Source, Destination, text);
         }
 
+        //TODO: instead use attributes?
         public static readonly Dictionary<State, Func<MessageEvent, bool>> Handlers = new()
         {
             { State.Unknown, (_) => throw new NotImplementedException() },
@@ -188,6 +189,17 @@ namespace VNCSniffer.Cli
         }
 
         // Client To Server Messages
+        //TODO: use attributes for this list and message type checks?
+        public static readonly List<Func<MessageEvent, bool>> ClientHandlers = new()
+        {
+            { HandleClientSetPixelFormat },
+            { HandleClientSetEncodings },
+            { HandleClientFramebufferUpdateRequest },
+            { HandleClientKeyEvent },
+            { HandleClientPointerEvent },
+            { HandleClientClientCutText },
+        };
+        //TODO: SetClientServer
         public static bool HandleClientSetPixelFormat(MessageEvent ev)
         {
             // Message-Type (1) + Padding (3) + PixelFormat(16) = 20
@@ -198,6 +210,8 @@ namespace VNCSniffer.Cli
                 return false;
 
             //TODO: padding check?
+            // 3 bytes padding
+            var format = new PixelFormat(ev.Data[4..]);
             ev.Log("SetPixelFormat");
             return true;
         }
@@ -208,11 +222,25 @@ namespace VNCSniffer.Cli
             if (ev.Data.Length < 4)
                 return false;
 
-            if (ev.Data[0] != 1) // Message Type 1
+            if (ev.Data[0] != 2) // Message Type 2
                 return false;
 
             //TODO: padding check?
-            ev.Log("SetEncodings");
+            // 1 byte padding
+            var numberOfEncodings = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var end = 4 + (numberOfEncodings * 4);
+            if (ev.Data.Length != end)
+                return false;
+
+            var encodings = new List<int>();
+            for (var i = 0; i < numberOfEncodings; i++)
+            {
+                var index = 4 + (i * 4);
+                //INFO: encodings are signed
+                var encoding = BinaryPrimitives.ReadInt32BigEndian(ev.Data[index..]);
+                encodings.Add(encoding);
+            }
+            ev.Log($"SetEncodings: {string.Join(" ", encodings)}");
             return true;
         }
 
@@ -225,7 +253,13 @@ namespace VNCSniffer.Cli
             if (ev.Data[0] != 3) // Message Type 3
                 return false;
 
-            ev.Log("FramebufferUpdateRequest");
+            var incremental = Convert.ToBoolean(ev.Data[1]);
+            var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var y = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[4..]);
+            var w = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[6..]);
+            var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[8..]);
+
+            ev.Log($"FramebufferUpdateRequest: Incremental ({incremental}), X ({x}), Y ({y}), W ({w}), H ({h})");
             return true;
         }
 
@@ -239,7 +273,10 @@ namespace VNCSniffer.Cli
                 return false;
 
             //TODO: padding check?
-            ev.Log("KeyEvent");
+            var downFlag = Convert.ToBoolean(ev.Data[1]);
+            // 2 bytes padding
+            var key = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[4..]);
+            ev.Log($"KeyEvent: Key {key}, Down: {downFlag}");
             return true;
         }
 
@@ -252,7 +289,11 @@ namespace VNCSniffer.Cli
             if (ev.Data[0] != 5) // Message Type 5
                 return false;
 
-            ev.Log("PointerEvent");
+            var mask = ev.Data[1];
+            var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var y = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[4..]);
+
+            ev.Log($"PointerEvent: Mask {Convert.ToString(mask, 2)}, X ({x}), Y ({y})");
             return true;
         }
 
@@ -266,11 +307,26 @@ namespace VNCSniffer.Cli
                 return false;
 
             //TODO: padding check?
-            ev.Log("ClientCutText");
+            // 3 bytes padding
+            var length = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[4..]);
+            var end = 8 + length;
+            if (ev.Data.Length != end)
+                return false;
+
+            var text = Encoding.Default.GetString(ev.Data[8..]);
+            ev.Log($"ClientCutText: Text ({text})");
             return true;
         }
 
         // Server To Client Messages
+        //TODO: use attributes for this list and message type checks?
+        public static readonly List<Func<MessageEvent, bool>> ServerHandlers = new()
+        {
+            { HandleServerFramebufferUpdate },
+            { HandleServerSetColorMapEntries },
+            { HandleServerBell },
+            { HandleServerServerCutText },
+        };
         public static bool HandleServerFramebufferUpdate(MessageEvent ev)
         {
             // Message-Type (1) + Padding (1) + NumberOfRectangles (2) + ?*12 >= 4
@@ -281,7 +337,27 @@ namespace VNCSniffer.Cli
                 return false;
 
             //TODO: padding check?
-            ev.Log("FramebufferUpdate");
+            // 1 byte padding
+            var numberOfRectangles = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var end = 4 + (numberOfRectangles * 12);
+            if (ev.Data.Length < end) //INFO: < cause there should be pixeldata after the rectangle headers
+                return false;
+
+            //TODO: rectangle class?
+            for (var i = 0; i < numberOfRectangles; i++)
+            {
+                var index = 4 + (i * 12);
+                // Parse header
+                var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[index..]);
+                var y = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 2)..]);
+                var w = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 4)..]);
+                var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 6)..]);
+                var encoding = BinaryPrimitives.ReadInt32BigEndian(ev.Data[(index + 8)..]);
+                Console.WriteLine($"Rectangle: X ({x}), Y ({y}), W ({w}), H ({h}), Encoding ({encoding})");
+                //TODO: we also need to parse the data or at least skip it...
+                break; //TODO: remove this break after we parse that properly
+            }
+            ev.Log($"FramebufferUpdate: Rectangles ({numberOfRectangles})");
             return true;
         }
 
@@ -295,7 +371,23 @@ namespace VNCSniffer.Cli
                 return false;
 
             //TODO: padding check?
-            ev.Log("SetColorMapEntries");
+            // 1 byte padding
+            var firstColor = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var numberOfColors = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var end = 6 + (numberOfColors * 6);
+            if (ev.Data.Length != end)
+                return false;
+
+            var colors = new List<string>(); //TODO: color class
+            for (var i = 0; i < numberOfColors;  i++)
+            {
+                var index = 6 + (i * 6);
+                var red = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[index..]);
+                var green = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 2)..]);
+                var blue = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 4)..]);
+                colors.Add($"({red},{green},{blue})"); //TODO: class this
+            }
+            ev.Log($"SetColorMapEntries: Index ({firstColor}), Colors ({numberOfColors}): {string.Join(",", colors)}");
             return true;
         }
 
@@ -322,7 +414,14 @@ namespace VNCSniffer.Cli
                 return false;
 
             //TODO: padding check?
-            ev.Log("ServerCutText");
+            // 3 bytes padding
+            var length = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[4..]);
+            var end = 8 + length;
+            if (ev.Data.Length != end)
+                return false;
+
+            var text = Encoding.Default.GetString(ev.Data[8..]);
+            ev.Log($"ServerCutText: Text ({text})");
             return true;
         }
     }
