@@ -48,6 +48,13 @@ namespace VNCSniffer.Cli
             public void Log(string text) => Connection.LogData(Source, SourcePort, Destination, DestinationPort, text);
         }
 
+        public enum ProcessStatus
+        {
+            Invalid,
+            NeedsMoreBytes,
+            Handled
+        }
+
         //TODO: instead use attributes?
         public static readonly Dictionary<State, Func<MessageEvent, bool>> Handlers = new()
         {
@@ -194,7 +201,7 @@ namespace VNCSniffer.Cli
 
         // Client To Server Messages
         //TODO: use attributes for this list and message type checks?
-        public static readonly List<Func<MessageEvent, bool>> ClientHandlers = new()
+        public static readonly List<Func<MessageEvent, ProcessStatus>> ClientHandlers = new()
         {
             { HandleClientSetPixelFormat },
             { HandleClientSetEncodings },
@@ -204,37 +211,37 @@ namespace VNCSniffer.Cli
             { HandleClientClientCutText },
         };
         //TODO: SetClientServer in the functions
-        public static bool HandleClientSetPixelFormat(MessageEvent ev)
+        public static ProcessStatus HandleClientSetPixelFormat(MessageEvent ev)
         {
             // Message-Type (1) + Padding (3) + PixelFormat(16) = 20
             if (ev.Data.Length != 20)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 0) // Message Type 0
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             // 3 bytes padding
             var format = new PixelFormat(ev.Data[4..]);
             ev.Log("SetPixelFormat");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleClientSetEncodings(MessageEvent ev)
+        public static ProcessStatus HandleClientSetEncodings(MessageEvent ev)
         {
             // Message-Type (1) + Padding (1) + NumberOfEncodings (2) + ?*4 >= 4
             if (ev.Data.Length < 4)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 2) // Message Type 2
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             // 1 byte padding
             var numberOfEncodings = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
             var end = 4 + (numberOfEncodings * 4);
             if (ev.Data.Length != end)
-                return false;
+                return ProcessStatus.Invalid;
 
             var encodings = new List<int>();
             for (var i = 0; i < numberOfEncodings; i++)
@@ -245,17 +252,17 @@ namespace VNCSniffer.Cli
                 encodings.Add(encoding);
             }
             ev.Log($"SetEncodings: {string.Join(" ", encodings)}");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleClientFramebufferUpdateRequest(MessageEvent ev)
+        public static ProcessStatus HandleClientFramebufferUpdateRequest(MessageEvent ev)
         {
             // Message-Type (1) + Incremental (1) + X (2) + Y (2) + W (2) + H (2) = 10
             if (ev.Data.Length != 10)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 3) // Message Type 3
-                return false;
+                return ProcessStatus.Invalid;
 
             var incremental = Convert.ToBoolean(ev.Data[1]);
             var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
@@ -264,115 +271,141 @@ namespace VNCSniffer.Cli
             var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[8..]);
 
             ev.Log($"FramebufferUpdateRequest: Incremental ({incremental}), X ({x}), Y ({y}), W ({w}), H ({h})");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleClientKeyEvent(MessageEvent ev)
+        public static ProcessStatus HandleClientKeyEvent(MessageEvent ev)
         {
             // Message-Type (1) + Down (1) + Padding (2) + Key (4) = 8
             if (ev.Data.Length != 8)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 4) // Message Type 4
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             var downFlag = Convert.ToBoolean(ev.Data[1]);
             // 2 bytes padding
             var key = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[4..]);
             ev.Log($"KeyEvent: Key {key}, Down: {downFlag}");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleClientPointerEvent(MessageEvent ev)
+        public static ProcessStatus HandleClientPointerEvent(MessageEvent ev)
         {
             // Message-Type (1) + Mask (1) + X (2) + Y (2) = 6
             if (ev.Data.Length != 6)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 5) // Message Type 5
-                return false;
+                return ProcessStatus.Invalid;
 
             var mask = ev.Data[1];
             var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
             var y = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[4..]);
 
             ev.Log($"PointerEvent: Mask {Convert.ToString(mask, 2)}, X ({x}), Y ({y})");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleClientClientCutText(MessageEvent ev)
+        public static ProcessStatus HandleClientClientCutText(MessageEvent ev)
         {
             // Message-Type (1) + Padding (3) + Length (4) + ?*1 >= 8
             if (ev.Data.Length < 8)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 6) // Message Type 6
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             // 3 bytes padding
             var length = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[4..]);
             var end = 8 + length;
             if (ev.Data.Length != end)
-                return false;
+                return ProcessStatus.Invalid;
 
             var text = Encoding.Default.GetString(ev.Data[8..]);
             ev.Log($"ClientCutText: Text ({text})");
-            return true;
+            return ProcessStatus.Handled;
         }
 
         // Server To Client Messages
         //TODO: use attributes for this list and message type checks?
-        public static readonly List<Func<MessageEvent, bool>> ServerHandlers = new()
+        public static readonly List<Func<MessageEvent, ProcessStatus>> ServerHandlers = new()
         {
             { HandleServerFramebufferUpdate },
             { HandleServerSetColorMapEntries },
             { HandleServerBell },
             { HandleServerServerCutText },
         };
-        public static bool HandleServerFramebufferUpdate(MessageEvent ev)
+
+        public class Rectangle //TODO: move this somewhere else
+        {
+            public ushort x;
+            public ushort y;
+            public ushort w;
+            public ushort h;
+            public int encoding;
+            public int dataLength; //TODO: make this into data
+
+            public override string ToString()
+            {
+                return $"Rectangle: X ({x}), Y ({y}), W ({w}), H ({h}), Encoding ({encoding}), Length ({dataLength})";
+            }
+        }
+        public static ProcessStatus HandleServerFramebufferUpdate(MessageEvent ev)
         {
             // Message-Type (1) + Padding (1) + NumberOfRectangles (2) + ?*12 >= 4
             if (ev.Data.Length < 4)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 0) // Message Type 0
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             // 1 byte padding
             var numberOfRectangles = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
             var end = 4 + (numberOfRectangles * 12);
             if (ev.Data.Length < end) //INFO: < cause there should be pixeldata after the rectangle headers
-                return false;
+                return ProcessStatus.Invalid;
 
-            //TODO: rectangle class?
+            var index = 4;
+            var rectangles = new List<Rectangle>();
             for (var i = 0; i < numberOfRectangles; i++)
             {
-                var index = 4 + (i * 12);
+                if (ev.Data.Length <= (index + 12)) // header check
+                    return ProcessStatus.NeedsMoreBytes;
                 // Parse header
                 var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[index..]);
                 var y = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 2)..]);
                 var w = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 4)..]);
                 var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 6)..]);
                 var encoding = BinaryPrimitives.ReadInt32BigEndian(ev.Data[(index + 8)..]);
-                Console.WriteLine($"Rectangle: X ({x}), Y ({y}), W ({w}), H ({h}), Encoding ({encoding})");
+                index += 12;
                 //TODO: we also need to parse the data or at least skip it...
-                break; //TODO: remove this break after we parse that properly
+                var dataLength = 0;
+                if (encoding == 0) //TODO: make this better lmao
+                {
+                    var bpp = ev.Connection.Format != null ? ev.Connection.Format.BitsPerPixel : 32;
+                    dataLength = w * h * (bpp / 8);
+                }
+                rectangles.Add(new Rectangle() { x = x, y = y, w = w, h = h, encoding = encoding, dataLength = dataLength });
+                index += dataLength;
+                if (ev.Data.Length < index) // data check
+                    return ProcessStatus.NeedsMoreBytes;
             }
-            ev.Log($"FramebufferUpdate: Rectangles ({numberOfRectangles})");
-            return true;
+            ev.Log($"FramebufferUpdate: Rectangles ({numberOfRectangles}): {string.Join(";", rectangles)}");
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleServerSetColorMapEntries(MessageEvent ev)
+        public static ProcessStatus HandleServerSetColorMapEntries(MessageEvent ev)
         {
             // Message-Type (1) + Padding (1) + FirstColor (2) + NumberOfColors (2) + ?*6 >= 6
             if (ev.Data.Length < 6)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 1) // Message Type 1
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             // 1 byte padding
@@ -380,7 +413,7 @@ namespace VNCSniffer.Cli
             var numberOfColors = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
             var end = 6 + (numberOfColors * 6);
             if (ev.Data.Length != end)
-                return false;
+                return ProcessStatus.Invalid;
 
             var colors = new List<string>(); //TODO: color class
             for (var i = 0; i < numberOfColors;  i++)
@@ -392,41 +425,41 @@ namespace VNCSniffer.Cli
                 colors.Add($"({red},{green},{blue})"); //TODO: class this
             }
             ev.Log($"SetColorMapEntries: Index ({firstColor}), Colors ({numberOfColors}): {string.Join(",", colors)}");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleServerBell(MessageEvent ev)
+        public static ProcessStatus HandleServerBell(MessageEvent ev)
         {
             // Message-Type (1) = 1
             if (ev.Data.Length != 1)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 2) // Message Type 2
-                return false;
+                return ProcessStatus.Invalid;
 
             ev.Log("Bell");
-            return true;
+            return ProcessStatus.Handled;
         }
 
-        public static bool HandleServerServerCutText(MessageEvent ev)
+        public static ProcessStatus HandleServerServerCutText(MessageEvent ev)
         {
             // Message-Type (1) + Padding (3) + Length (4) + ?*1 >= 8
             if (ev.Data.Length < 8)
-                return false;
+                return ProcessStatus.Invalid;
 
             if (ev.Data[0] != 3) // Message Type 3
-                return false;
+                return ProcessStatus.Invalid;
 
             //TODO: padding check?
             // 3 bytes padding
             var length = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[4..]);
             var end = 8 + length;
             if (ev.Data.Length != end)
-                return false;
+                return ProcessStatus.Invalid;
 
             var text = Encoding.Default.GetString(ev.Data[8..]);
             ev.Log($"ServerCutText: Text ({text})");
-            return true;
+            return ProcessStatus.Handled;
         }
     }
 }

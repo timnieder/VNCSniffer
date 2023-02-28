@@ -93,10 +93,6 @@ namespace VNCSniffer.Cli
             if (!tcp.HasPayloadData)
                 return;
 
-            if (!tcp.Push) //TODO: check if they only push
-                return;
-
-            //TODO: handle multi packet msgs?
             var msg = tcp.PayloadData;
             if (msg == null || msg.Length == 0)
                 return;
@@ -126,10 +122,20 @@ namespace VNCSniffer.Cli
         private static bool ParseMessage(Connection connection, IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, byte[] data)
         {
             var result = false;
+
+            var buffer = data;
+            // Check if we have any pakets buffered and if we do append ours
+            var conBuffer = connection.GetBuffer(source, sourcePort);
+            if (conBuffer != null)
+            {
+                var newBuffer = new byte[conBuffer.Length + buffer.Length];
+                conBuffer.CopyTo(newBuffer, 0);
+                data.CopyTo(newBuffer, conBuffer.Length);
+                buffer = newBuffer;
+            }
             // Our connection isnt initialized yet (or so we think)
             // Therefore we check from the laststate if any messages can be parsed
-            var ev = new Messages.MessageEvent(source, dest, connection, data);
-            var ev = new Messages.MessageEvent(source, sourcePort, dest, destPort, connection, data);
+            var ev = new Messages.MessageEvent(source, sourcePort, dest, destPort, connection, buffer);
             if (connection.LastState < State.Initialized)
             {
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
@@ -159,27 +165,38 @@ namespace VNCSniffer.Cli
                 checkClientMsgs = false;
             }
 
-            if (checkClientMsgs)
+            bool checkHandlers(List<Func<Messages.MessageEvent, Messages.ProcessStatus>> handlers)
             {
-                foreach (var clientMsgHandler in Messages.ClientHandlers)
+                foreach (var msgHandler in handlers)
                 {
-                    var handled = clientMsgHandler(ev);
-                    if (handled)
+                    var handled = msgHandler(ev);
+                    if (handled == Messages.ProcessStatus.Handled)
                     {
+                        connection.SetBuffer(source, sourcePort, null);
+                        return true;
+                    }
+                    else if (handled == Messages.ProcessStatus.NeedsMoreBytes)
+                    {
+                        // save buffer for later processing
+                        //TODO: save msg so we can start directly from there, also pls make it directly flow based
+                        //Console.WriteLine("Need more bytes");
+                        connection.SetBuffer(source, sourcePort, buffer);
                         return true;
                     }
                 }
+                return false;
+            }
+            if (checkClientMsgs)
+            {
+                var handled = checkHandlers(Messages.ClientHandlers);
+                if (handled)
+                    return true;
             }
             if (checkServerMsgs)
             {
-                foreach (var serverMsgHandler in Messages.ServerHandlers)
-                {
-                    var handled = serverMsgHandler(ev);
-                    if (handled)
-                    {
-                        return true;
-                    }
-                }
+                var handled = checkHandlers(Messages.ServerHandlers);
+                if (handled)
+                    return true;
             }
 
             //connection.LogData(source, dest, message);
