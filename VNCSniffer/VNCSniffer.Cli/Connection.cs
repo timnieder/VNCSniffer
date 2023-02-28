@@ -13,7 +13,9 @@ namespace VNCSniffer.Cli
 
         public string? ProtocolVersion;
         public IPAddress? Client;
+        public ushort? ClientPort;
         public IPAddress? Server;
+        public ushort? ServerPort;
 
         public ushort? Width;
         public ushort? Height;
@@ -22,30 +24,32 @@ namespace VNCSniffer.Cli
         public byte[]? Challenge;
         public byte[]? ChallengeResponse;
 
-        public void LogData(IPAddress source, IPAddress dest, string text)
+        public void LogData(IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, string text)
         {
             var sourcePrefix = "";
             var destPrefix = "";
-            if (source.Equals(Client))
+            if (source.Equals(Client) && sourcePort.Equals(ClientPort))
             {
                 sourcePrefix = "C";
                 destPrefix = "S";
             }
-            else if (source.Equals(Server))
+            else if (source.Equals(Server) && destPort.Equals(ServerPort))
             {
                 sourcePrefix = "S";
                 destPrefix = "C";
             }
-            Console.WriteLine($"[{sourcePrefix}]{source}->[{destPrefix}]{dest}: {text}");
+            Console.WriteLine($"[{sourcePrefix}]{source}:{sourcePort}->[{destPrefix}]{dest}:{destPort}: {text}");
         }
 
-        public void SetClientServer(IPAddress client, IPAddress server) 
+        public void SetClientServer(IPAddress client, ushort clientPort, IPAddress server, ushort serverPort)
         {
             if (Client != null) // don't overwrite
                 return;
 
             Client = client;
+            ClientPort = clientPort;
             Server = server;
+            ServerPort = serverPort;
         }
     }
 }

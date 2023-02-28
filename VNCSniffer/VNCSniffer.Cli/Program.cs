@@ -103,7 +103,9 @@ namespace VNCSniffer.Cli
 
             var ip = (IPPacket)tcp.ParentPacket;
             var source = ip.SourceAddress;
+            var sourcePort = tcp.SourcePort;
             var dest = ip.DestinationAddress;
+            var destPort = tcp.DestinationPort;
 
             if (!Connections.TryGetValue(tcpConnection, out var connection))
             {
@@ -111,22 +113,23 @@ namespace VNCSniffer.Cli
                 return;
             }
 
-            var parsed = ParseMessage(connection, source, dest, msg);
+            var parsed = ParseMessage(connection, source, sourcePort, dest, destPort, msg);
             if (parsed)
                 return;
 
             var data = BitConverter.ToString(msg);
             if (data.Length > 50)
                 data = data.Substring(0, 50) + "...";
-            Console.WriteLine($"[{tcp.SequenceNumber}] {source}:{tcp.SourcePort}->{dest}:{tcp.DestinationPort}: {data}");
+            Console.WriteLine($"[{tcp.SequenceNumber}] {source}:{sourcePort}->{dest}:{destPort}: {data}");
         }
 
-        private static bool ParseMessage(Connection connection, IPAddress source, IPAddress dest, byte[] data)
+        private static bool ParseMessage(Connection connection, IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, byte[] data)
         {
             var result = false;
             // Our connection isnt initialized yet (or so we think)
             // Therefore we check from the laststate if any messages can be parsed
             var ev = new Messages.MessageEvent(source, dest, connection, data);
+            var ev = new Messages.MessageEvent(source, sourcePort, dest, destPort, connection, data);
             if (connection.LastState < State.Initialized)
             {
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
@@ -145,12 +148,12 @@ namespace VNCSniffer.Cli
             // parse c2s/s2c messages
             var checkClientMsgs = true;
             var checkServerMsgs = true;
-            if (source.Equals(connection.Client))
+            if (source.Equals(connection.Client) && sourcePort.Equals(connection.ClientPort))
             {
                 // source is the client => only check client msgs
                 checkServerMsgs = false;
             }
-            else if (source.Equals(connection.Server))
+            else if (source.Equals(connection.Server) && sourcePort.Equals(connection.ServerPort))
             {
                 // source is the server => only check server msgs
                 checkClientMsgs = false;

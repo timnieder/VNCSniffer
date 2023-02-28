@@ -28,20 +28,24 @@ namespace VNCSniffer.Cli
         public class MessageEvent
         {
             public IPAddress Source;
+            public ushort SourcePort;
             public IPAddress Destination;
+            public ushort DestinationPort;
             public Connection Connection;
             private byte[] DataArray;
             public ReadOnlySpan<byte> Data => DataArray;
 
-            public MessageEvent(IPAddress source, IPAddress destination, Connection connection, byte[] data)
+            public MessageEvent(IPAddress source, ushort sourcePort, IPAddress destination, ushort destPort, Connection connection, byte[] data)
             {
                 Source = source;
+                SourcePort = sourcePort;
                 Destination = destination;
+                DestinationPort = destPort;
                 Connection = connection;
                 DataArray = data;
             }
 
-            public void Log(string text) => Connection.LogData(Source, Destination, text);
+            public void Log(string text) => Connection.LogData(Source, SourcePort, Destination, DestinationPort, text);
         }
 
         //TODO: instead use attributes?
@@ -79,7 +83,7 @@ namespace VNCSniffer.Cli
             {
                 if (ev.Connection.ProtocolVersion != null)
                 {
-                    ev.Connection.SetClientServer(ev.Source, ev.Destination);
+                    ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort);
                 }
                 else //TODO: we shouldnt even hit this?
                 {
@@ -101,7 +105,7 @@ namespace VNCSniffer.Cli
             if (ev.Data.Length == (1 + numberOfSecurityTypes))
             {
                 var encodings = string.Join(" ", ev.Data[1..].ToArray()); //TODO: better thing than copy?
-                ev.Connection.SetClientServer(ev.Destination, ev.Source); // sent by server
+                ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort); // sent by server
                 ev.Log($"Security Types ({numberOfSecurityTypes}): {encodings}");
                 return true;
             }
@@ -141,7 +145,7 @@ namespace VNCSniffer.Cli
                 return false;
 
             ev.Connection.ChallengeResponse = ev.Data.ToArray(); //TODO: better thing than copy?
-            ev.Connection.SetClientServer(ev.Source, ev.Destination); // sent by client
+            ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort); // sent by client
             ev.Log($"Response: {BitConverter.ToString(ev.Connection.ChallengeResponse)}");
             return true;
         }
@@ -180,7 +184,7 @@ namespace VNCSniffer.Cli
             if (ev.Data.Length != end)
                 return false;
             var name = Encoding.Default.GetString(ev.Data[24..]);
-            ev.Connection.SetClientServer(ev.Destination, ev.Source);
+            ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort);
             ev.Connection.Width = width;
             ev.Connection.Height = height;
             ev.Connection.Format = format;
@@ -199,7 +203,7 @@ namespace VNCSniffer.Cli
             { HandleClientPointerEvent },
             { HandleClientClientCutText },
         };
-        //TODO: SetClientServer
+        //TODO: SetClientServer in the functions
         public static bool HandleClientSetPixelFormat(MessageEvent ev)
         {
             // Message-Type (1) + Padding (3) + PixelFormat(16) = 20
