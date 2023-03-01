@@ -1,9 +1,11 @@
-﻿using System.Buffers.Binary;
+﻿using Microsoft.VisualBasic;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using VNCSniffer.Cli.Encodings;
 
-namespace VNCSniffer.Cli
+namespace VNCSniffer.Cli.Messages
 {
     public enum State
     {
@@ -70,6 +72,7 @@ namespace VNCSniffer.Cli
             { State.ServerInit, HandleServerInit },
         };
 
+        //TODO: move messages into own classes and files?
         public static bool HandleProtocolHandshakeS(MessageEvent ev)
         {
             var str = Encoding.Default.GetString(ev.Data);
@@ -109,7 +112,7 @@ namespace VNCSniffer.Cli
                 return false;
 
             var numberOfSecurityTypes = ev.Data[0];
-            if (ev.Data.Length == (1 + numberOfSecurityTypes))
+            if (ev.Data.Length == 1 + numberOfSecurityTypes)
             {
                 var encodings = string.Join(" ", ev.Data[1..].ToArray()); //TODO: better thing than copy?
                 ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort); // sent by server
@@ -239,14 +242,14 @@ namespace VNCSniffer.Cli
             //TODO: padding check?
             // 1 byte padding
             var numberOfEncodings = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
-            var end = 4 + (numberOfEncodings * 4);
+            var end = 4 + numberOfEncodings * 4;
             if (ev.Data.Length != end)
                 return ProcessStatus.Invalid;
 
             var encodings = new List<int>();
             for (var i = 0; i < numberOfEncodings; i++)
             {
-                var index = 4 + (i * 4);
+                var index = 4 + i * 4;
                 //INFO: encodings are signed
                 var encoding = BinaryPrimitives.ReadInt32BigEndian(ev.Data[index..]);
                 encodings.Add(encoding);
@@ -365,7 +368,7 @@ namespace VNCSniffer.Cli
             //TODO: padding check?
             // 1 byte padding
             var numberOfRectangles = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
-            var end = 4 + (numberOfRectangles * 12);
+            var end = 4 + numberOfRectangles * 12;
             if (ev.Data.Length < end) //INFO: < cause there should be pixeldata after the rectangle headers
                 return ProcessStatus.Invalid;
 
@@ -373,7 +376,7 @@ namespace VNCSniffer.Cli
             var rectangles = new List<Rectangle>();
             for (var i = 0; i < numberOfRectangles; i++)
             {
-                if (ev.Data.Length <= (index + 12)) // header check
+                if (ev.Data.Length <= index + 12) // header check
                     return ProcessStatus.NeedsMoreBytes;
                 // Parse header
                 var x = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[index..]);
@@ -384,10 +387,14 @@ namespace VNCSniffer.Cli
                 index += 12;
                 //TODO: we also need to parse the data or at least skip it...
                 var dataLength = 0;
-                if (encoding == 0) //TODO: make this better lmao
+                if (Encodings.Encodings.Handlers.TryGetValue(encoding, out var enc))
                 {
-                    var bpp = ev.Connection.Format != null ? ev.Connection.Format.BitsPerPixel : 32;
-                    dataLength = w * h * (bpp / 8);
+                    dataLength = enc.GetLength(x, y, w, h, ev.Connection.Format);
+                }
+                else
+                {
+                    Console.WriteLine($"Encoding {encoding} not supported"); //TODO: can we do anything else?
+                    //TODO: break? fallthrough and assume length is 0?
                 }
                 rectangles.Add(new Rectangle() { x = x, y = y, w = w, h = h, encoding = encoding, dataLength = dataLength });
                 index += dataLength;
@@ -411,14 +418,14 @@ namespace VNCSniffer.Cli
             // 1 byte padding
             var firstColor = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
             var numberOfColors = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
-            var end = 6 + (numberOfColors * 6);
+            var end = 6 + numberOfColors * 6;
             if (ev.Data.Length != end)
                 return ProcessStatus.Invalid;
 
             var colors = new List<string>(); //TODO: color class
-            for (var i = 0; i < numberOfColors;  i++)
+            for (var i = 0; i < numberOfColors; i++)
             {
-                var index = 6 + (i * 6);
+                var index = 6 + i * 6;
                 var red = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[index..]);
                 var green = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 2)..]);
                 var blue = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 4)..]);
