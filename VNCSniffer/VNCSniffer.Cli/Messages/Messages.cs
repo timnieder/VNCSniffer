@@ -226,6 +226,7 @@ namespace VNCSniffer.Cli.Messages
             //TODO: padding check?
             // 3 bytes padding
             var format = new PixelFormat(ev.Data[4..]);
+            ev.Connection.Format = format;
             ev.Log("SetPixelFormat");
             return ProcessStatus.Handled;
         }
