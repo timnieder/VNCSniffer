@@ -141,8 +141,8 @@ namespace VNCSniffer.Cli
             {
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
                 {
-                    var handled = Messages.Messages.Handlers[i](ev);
-                    if (handled)
+                    var handled = Messages.Messages.Handlers[i].Handle(ev);
+                    if (handled == Messages.Messages.ProcessStatus.Handled)
                     {
                         connection.LastState = i;
                         return true;

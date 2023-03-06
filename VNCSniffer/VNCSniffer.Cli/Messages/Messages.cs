@@ -5,6 +5,9 @@ using System.Net;
 using System.Text;
 using VNCSniffer.Cli.Encodings;
 using VNCSniffer.Cli.Messages.Client;
+using VNCSniffer.Cli.Messages.Handshake;
+using VNCSniffer.Cli.Messages.Handshake.SecurityTypes;
+using VNCSniffer.Cli.Messages.Initialization;
 using VNCSniffer.Cli.Messages.Server;
 using static VNCSniffer.Cli.Messages.Messages;
 
@@ -61,149 +64,19 @@ namespace VNCSniffer.Cli.Messages
         }
 
         //TODO: instead use attributes?
-        public static readonly Dictionary<State, Func<MessageEvent, bool>> Handlers = new()
+        public static readonly Dictionary<State, IVNCMessage> Handlers = new()
         {
-            { State.Unknown, (_) => throw new NotImplementedException() },
-            { State.ProtocolHandshakeS, HandleProtocolHandshakeS },
-            { State.ProtocolHandshakeC, HandleProtocolHandshakeC },
-            { State.SecurityHandshakeS, HandleSecurityHandshakeS },
-            { State.SecurityHandshakeC, HandleSecurityHandshakeC },
-            { State.SecurityVNCAuthChallenge, HandleVNCAuthChallenge },
-            { State.SecurityVNCAuthResponse, HandleVNCAuthResponse },
-            { State.SecurityResult, HandleSecurityResult },
-            { State.ClientInit, HandleClientInit },
-            { State.ServerInit, HandleServerInit },
+            { State.Unknown, new NotImplementedMessage("State.Unknown") },
+            { State.ProtocolHandshakeS, new ServerProtocolHandshake() },
+            { State.ProtocolHandshakeC, new ClientProtocolHandshake() },
+            { State.SecurityHandshakeS, new ServerSecurityHandshake() },
+            { State.SecurityHandshakeC, new ClientSecurityHandshake() },
+            { State.SecurityVNCAuthChallenge, new VNCAuthChallenge() },
+            { State.SecurityVNCAuthResponse, new VNCAuthResponse() },
+            { State.SecurityResult, new SecurityResult() },
+            { State.ClientInit, new ClientInit() },
+            { State.ServerInit, new ServerInit() },
         };
-
-        //TODO: move messages into own classes and files?
-        public static bool HandleProtocolHandshakeS(MessageEvent ev)
-        {
-            var str = Encoding.Default.GetString(ev.Data);
-            if (str.StartsWith("RFB"))
-            {
-                // We can't say if this is the server or client message, so we cant set it yet
-                ev.Connection.ProtocolVersion = str;
-                ev.Log($"ProtocolVersion: {str.TrimEnd()}");
-                return true;
-            }
-            return false;
-        }
-
-        public static bool HandleProtocolHandshakeC(MessageEvent ev)
-        {
-            var str = Encoding.Default.GetString(ev.Data);
-            if (str.StartsWith("RFB"))
-            {
-                if (ev.Connection.ProtocolVersion != null)
-                {
-                    ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort);
-                }
-                else //TODO: we shouldnt even hit this?
-                {
-                    Debug.Assert(false, "ProtocolVersion not set");
-                    ev.Connection.ProtocolVersion = str;
-                }
-                ev.Log($"ProtocolVersion: {str.TrimEnd()}");
-                return true;
-            }
-            return false;
-        }
-
-        public static bool HandleSecurityHandshakeS(MessageEvent ev)
-        {
-            if (ev.Data.Length < 1)
-                return false;
-
-            var numberOfSecurityTypes = ev.Data[0];
-            if (ev.Data.Length == 1 + numberOfSecurityTypes)
-            {
-                var encodings = string.Join(" ", ev.Data[1..].ToArray()); //TODO: better thing than copy?
-                ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort); // sent by server
-                ev.Log($"Security Types ({numberOfSecurityTypes}): {encodings}");
-                return true;
-            }
-            return false;
-        }
-
-        public static bool HandleSecurityHandshakeC(MessageEvent ev)
-        {
-            if (ev.Data.Length != 1)
-                return false;
-
-            if (ev.Connection.Client != null && !ev.Connection.Client.Equals(ev.Source))
-                return false; //TODO: shouldnt happen?
-
-            var securityType = ev.Data[0];
-            //TODO: check if security type is valid/was offered by server?
-            ev.Log($"Selected Security Type: {securityType}");
-            return true;
-        }
-
-        public static bool HandleVNCAuthChallenge(MessageEvent ev)
-        {
-            if (ev.Data.Length != 16)
-                return false;
-
-            var unsure = "?"; // cant be sure if this is the challenge
-            if (ev.Connection.Client != null) // if we know where we are (we've got messages beforehand), we can be sure
-                unsure = "";
-            ev.Connection.Challenge = ev.Data.ToArray(); //TODO: better thing than copy?
-            ev.Log($"Challenge{unsure}: {BitConverter.ToString(ev.Connection.Challenge)}");
-            return true;
-        }
-
-        public static bool HandleVNCAuthResponse(MessageEvent ev)
-        {
-            if (ev.Data.Length != 16)
-                return false;
-
-            ev.Connection.ChallengeResponse = ev.Data.ToArray(); //TODO: better thing than copy?
-            ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort); // sent by client
-            ev.Log($"Response: {BitConverter.ToString(ev.Connection.ChallengeResponse)}");
-            return true;
-        }
-
-        public static bool HandleSecurityResult(MessageEvent ev)
-        {
-            if (ev.Data.Length != 4)
-                return false;
-
-            var result = BinaryPrimitives.ReadUInt32BigEndian(ev.Data);
-            ev.Log($"SecurityResult: {result}");
-            return true;
-        }
-
-        public static bool HandleClientInit(MessageEvent ev)
-        {
-            if (ev.Data.Length != 1)
-                return false;
-
-            bool sharedFlag = Convert.ToBoolean(ev.Data[0]);
-            ev.Log($"ClientInit: Shared Flag ({sharedFlag})");
-            return true;
-        }
-
-        public static bool HandleServerInit(MessageEvent ev)
-        {
-            // Length: 2 + 2 + 16 + 4 + x >= 24
-            if (ev.Data.Length < 24)
-                return false;
-
-            ushort width = BinaryPrimitives.ReadUInt16BigEndian(ev.Data);
-            ushort height = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
-            var format = new PixelFormat(ev.Data[4..20]);
-            var nameLength = BinaryPrimitives.ReadUInt32BigEndian(ev.Data[20..]);
-            var end = 24 + nameLength;
-            if (ev.Data.Length != end)
-                return false;
-            var name = Encoding.Default.GetString(ev.Data[24..]);
-            ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort);
-            ev.Connection.Width = width;
-            ev.Connection.Height = height;
-            ev.Connection.Format = format;
-            ev.Log($"ServerInit: Width ({width}), Height ({height}), Name ({name})");
-            return true;
-        }
 
         // Client To Server Messages
         //TODO: use attributes for this list and message type checks?
