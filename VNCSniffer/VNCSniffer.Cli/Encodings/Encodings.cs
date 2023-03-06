@@ -7,6 +7,7 @@ using static VNCSniffer.Cli.Messages.Messages;
 using VNCSniffer.Cli.Messages;
 using System.Buffers.Binary;
 using VNCSniffer.Cli.Messages.Server;
+using VNCSniffer.Cli.Encodings.Pseudo;
 
 namespace VNCSniffer.Cli.Encodings
 {
@@ -17,7 +18,10 @@ namespace VNCSniffer.Cli.Encodings
         {
             { 0, new RawEncoding() },
             { 1, new CopyRectEncoding() },
-            { 2, new RREEncoding() }
+            { 2, new RREEncoding() },
+            // Pseudo
+            { -223, new DesktopSizePseudoEncoding() },
+            { -239, new CursorPseudoEncoding() },
         };
     }
 

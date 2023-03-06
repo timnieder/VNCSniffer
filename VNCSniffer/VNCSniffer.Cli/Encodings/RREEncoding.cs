@@ -33,6 +33,7 @@ namespace VNCSniffer.Cli.Encodings
                 var y = e.Data[(index + bpp + 2)..];
                 var w = e.Data[(index + bpp + 4)..];
                 var h = e.Data[(index + bpp + 6)..];
+                //TODO: write into bitmap
                 index += length;
             }
             return ProcessStatus.Handled;

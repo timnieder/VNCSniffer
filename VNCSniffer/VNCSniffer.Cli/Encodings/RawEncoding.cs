@@ -17,6 +17,7 @@ namespace VNCSniffer.Cli.Encodings
             if (e.Data.Length < index + length)
                 return ProcessStatus.NeedsMoreBytes;
 
+            //TODO: parse bitmap
             index += length;
             return ProcessStatus.Handled;
         }
