@@ -166,11 +166,11 @@ namespace VNCSniffer.Cli
                 checkClientMsgs = false;
             }
 
-            bool checkHandlers(List<Func<Messages.Messages.MessageEvent, Messages.Messages.ProcessStatus>> handlers)
+            bool checkHandlers(List<IVNCMessage> handlers)
             {
                 foreach (var msgHandler in handlers)
                 {
-                    var handled = msgHandler(ev);
+                    var handled = msgHandler.Handle(ev);
                     if (handled == Messages.Messages.ProcessStatus.Handled)
                     {
                         connection.SetBuffer(source, sourcePort, null);

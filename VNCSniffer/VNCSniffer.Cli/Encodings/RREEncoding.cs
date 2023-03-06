@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VNCSniffer.Cli.Messages.Server;
 using static VNCSniffer.Cli.Messages.Messages;
 
 namespace VNCSniffer.Cli.Encodings

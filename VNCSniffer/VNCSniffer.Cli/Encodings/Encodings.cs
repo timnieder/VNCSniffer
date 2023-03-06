@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using static VNCSniffer.Cli.Messages.Messages;
 using VNCSniffer.Cli.Messages;
 using System.Buffers.Binary;
+using VNCSniffer.Cli.Messages.Server;
 
 namespace VNCSniffer.Cli.Encodings
 {
