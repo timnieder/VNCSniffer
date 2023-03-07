@@ -26,7 +26,9 @@ namespace VNCSniffer.Cli.Encodings
             var bpp = e.Connection.Format != null ? e.Connection.Format.BitsPerPixel : 32;
             bpp /= 8;
             // rectangle is tiled into 16px*16px, so math.ceil(w/16) tiles per row and math.ceil(h/16) tiles per column
-            var numTiles = (int)Math.Ceiling(ev.w / 16f) * (int)Math.Ceiling(ev.h / 16f);
+            var numTilesColumn = (int)Math.Ceiling(ev.w / 16f);
+            var numTilesRow = (int)Math.Ceiling(ev.h / 16f);
+            var numTiles = numTilesColumn * numTilesRow;
             if (e.Data.Length < index + numTiles) // at least one byte per tile
                 return ProcessStatus.NeedsMoreBytes;
             //TODO: remove this prev check as its probably not needed?
@@ -34,93 +36,101 @@ namespace VNCSniffer.Cli.Encodings
             //TODO: make this into Pixel/color class?
             ReadOnlySpan<byte> bgColor = null;
             ReadOnlySpan<byte> fgColor = null;
-            for (var i = 0; i < numTiles; i++)
+            for (var i = 0; i < numTilesRow; i++)
             {
-                // may not have enough bytes for the header
-                if (e.Data.Length < index)
-                    return ProcessStatus.NeedsMoreBytes;
-
-                var header = (SubencodingMask)e.Data[index];
-                index += 1;
-
-                if (header.HasFlag(SubencodingMask.Raw)) // Raw bytes
+                // the last row can be smaller than 16px high
+                var tileH = i == numTilesRow - 1 ? ev.h % 16 : 16;
+                for (var j = 0; j < numTilesColumn; j++)
                 {
-                    var length = ev.w * ev.h * bpp;
-                    if (e.Data.Length < index + length)
+                    // may not have enough bytes for the header
+                    if (e.Data.Length < index)
                         return ProcessStatus.NeedsMoreBytes;
 
-                    //TODO: parse bitmap
-                    index += length;
-                    continue; // other flags are ignored
-                }
+                    // last tile in a row can be smaller than 16px wide
+                    var tileW = j == numTilesColumn - 1 ? ev.w % 16 : 16;
 
-                // Defines that a tile contains a new background color
-                if (header.HasFlag(SubencodingMask.BackgroundSpecified))
-                {
-                    if (e.Data.Length < index + bpp)
-                        return ProcessStatus.NeedsMoreBytes;
-
-                    //TODO: parse bg color
-                    bgColor = e.Data[index..];
-                    index += bpp;
-                }
-
-                // Defines that the tile contains a new foreground color
-                if (header.HasFlag(SubencodingMask.ForegroundSpecified))
-                {
-                    if (e.Data.Length < index + bpp)
-                        return ProcessStatus.NeedsMoreBytes;
-
-                    //TODO: parse fg color
-                    fgColor = e.Data[index..];
-                    index += bpp;
-                }
-
-                var numberOfSubrects = 0;
-                var subrectLength = 2; // 1 byte x+y, 1 byte w+h
-                bool subrectsColored = false;
-                // Defines that a tile has subrectangles, followed by the number of subrectangles
-                if (header.HasFlag(SubencodingMask.AnySubrects))
-                {
-                    if (e.Data.Length < index + 1)
-                        return ProcessStatus.NeedsMoreBytes;
-                    numberOfSubrects = e.Data[index];
+                    var header = (SubencodingMask)e.Data[index];
                     index += 1;
-                }
 
-                // Defines that each subrect in the tale contains a preceding pixel value
-                if (header.HasFlag(SubencodingMask.SubrectsColored))
-                {
-                    if (e.Data.Length < index + 1)
-                        return ProcessStatus.NeedsMoreBytes;
-                    subrectLength += bpp; // pixel before each subrect
-                    subrectsColored = true;
-                }
-
-                // length check for all subrects
-                if (e.Data.Length < index + (numberOfSubrects * subrectLength))
-                    return ProcessStatus.NeedsMoreBytes;
-
-                //TODO: draw bg
-                for (var j = 0; j < numberOfSubrects; j++) 
-                {
-                    var clr = fgColor;
-                    if (subrectsColored)
+                    if (header.HasFlag(SubencodingMask.Raw)) // Raw bytes
                     {
-                        //TODO: read pixel;
-                        clr = e.Data[index..];
+                        var length = tileW * tileH * bpp;
+                        if (e.Data.Length < index + length)
+                            return ProcessStatus.NeedsMoreBytes;
+
+                        //TODO: parse bitmap
+                        index += length;
+                        continue; // other flags are ignored
+                    }
+
+                    // Defines that a tile contains a new background color
+                    if (header.HasFlag(SubencodingMask.BackgroundSpecified))
+                    {
+                        if (e.Data.Length < index + bpp)
+                            return ProcessStatus.NeedsMoreBytes;
+
+                        //TODO: parse bg color
+                        bgColor = e.Data[index..];
                         index += bpp;
                     }
-                    // xy and wh are merged x and y/w and h values.
-                    // The upper 4 bits are x/w and the lower ones being y/h respectively
-                    var xy = e.Data[index];
-                    var x = xy >> 4;
-                    var y = xy & 0b00001111;
-                    var wh = e.Data[(index + 1)];
-                    var w = wh >> 4;
-                    var h = wh & 0b00001111;
-                    //TODO: draw subrect
-                    index += 2;
+
+                    // Defines that the tile contains a new foreground color
+                    if (header.HasFlag(SubencodingMask.ForegroundSpecified))
+                    {
+                        if (e.Data.Length < index + bpp)
+                            return ProcessStatus.NeedsMoreBytes;
+
+                        //TODO: parse fg color
+                        fgColor = e.Data[index..];
+                        index += bpp;
+                    }
+
+                    var numberOfSubrects = 0;
+                    var subrectLength = 2; // 1 byte x+y, 1 byte w+h
+                    bool subrectsColored = false;
+                    // Defines that a tile has subrectangles, followed by the number of subrectangles
+                    if (header.HasFlag(SubencodingMask.AnySubrects))
+                    {
+                        if (e.Data.Length < index + 1)
+                            return ProcessStatus.NeedsMoreBytes;
+                        numberOfSubrects = e.Data[index];
+                        index += 1;
+                    }
+
+                    // Defines that each subrect in the tale contains a preceding pixel value
+                    if (header.HasFlag(SubencodingMask.SubrectsColored))
+                    {
+                        if (e.Data.Length < index + 1)
+                            return ProcessStatus.NeedsMoreBytes;
+                        subrectLength += bpp; // pixel before each subrect
+                        subrectsColored = true;
+                    }
+
+                    // length check for all subrects
+                    if (e.Data.Length < index + (numberOfSubrects * subrectLength))
+                        return ProcessStatus.NeedsMoreBytes;
+
+                    //TODO: draw bg
+                    for (var k = 0; k < numberOfSubrects; k++)
+                    {
+                        var clr = fgColor;
+                        if (subrectsColored)
+                        {
+                            //TODO: read pixel;
+                            clr = e.Data[index..];
+                            index += bpp;
+                        }
+                        // xy and wh are merged x and y/w and h values.
+                        // The upper 4 bits are x/w and the lower ones being y/h respectively
+                        var xy = e.Data[index];
+                        var x = xy >> 4;
+                        var y = xy & 0b00001111;
+                        var wh = e.Data[(index + 1)];
+                        var w = wh >> 4;
+                        var h = wh & 0b00001111;
+                        //TODO: draw subrect
+                        index += 2;
+                    }
                 }
             }
 

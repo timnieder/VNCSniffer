@@ -106,7 +106,7 @@ namespace VNCSniffer.Cli
 
             if (!Connections.TryGetValue(tcpConnection, out var connection))
             {
-                Debug.Assert(connection != null, "No connection found for tcp connection.");
+                Debug.Fail("No connection found for tcp connection.");
                 return;
             }
 

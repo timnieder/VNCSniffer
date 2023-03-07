@@ -37,7 +37,7 @@ namespace VNCSniffer.Cli.Messages.Handshake
                 }
                 else //TODO: we shouldnt even hit this?
                 {
-                    Debug.Assert(false, "ProtocolVersion not set");
+                    Debug.Fail("ProtocolVersion not set");
                     ev.Connection.ProtocolVersion = str;
                 }
                 ev.Log($"ProtocolVersion: {str.TrimEnd()}");
