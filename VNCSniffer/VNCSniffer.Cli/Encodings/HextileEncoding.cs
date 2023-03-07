@@ -96,7 +96,7 @@ namespace VNCSniffer.Cli.Encodings
                         if (e.Data.Length < index + 1)
                             return ProcessStatus.NeedsMoreBytes;
                         numberOfSubrects = e.Data[index];
-                        index += 1;
+                        index++;
                     }
 
                     // Defines that each subrect in the tale contains a preceding pixel value
