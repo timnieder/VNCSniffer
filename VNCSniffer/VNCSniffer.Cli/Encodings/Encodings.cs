@@ -20,6 +20,7 @@ namespace VNCSniffer.Cli.Encodings
             { 1, new CopyRectEncoding() },
             { 2, new RREEncoding() },
             { 5, new HextileEncoding() },
+            { 15, new TRLEEncoding() },
             // Pseudo
             { -223, new DesktopSizePseudoEncoding() },
             { -239, new CursorPseudoEncoding() },

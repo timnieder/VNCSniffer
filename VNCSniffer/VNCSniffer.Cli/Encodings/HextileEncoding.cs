@@ -24,6 +24,7 @@ namespace VNCSniffer.Cli.Encodings
         public ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index)
         {
             var bpp = e.Connection.Format != null ? e.Connection.Format.BitsPerPixel : 32;
+            bpp /= 8;
             // rectangle is tiled into 16px*16px, so math.ceil(w/16) tiles per row and math.ceil(h/16) tiles per column
             var numTiles = (int)Math.Ceiling(ev.w / 16f) * (int)Math.Ceiling(ev.h / 16f);
             if (e.Data.Length < index + numTiles) // at least one byte per tile

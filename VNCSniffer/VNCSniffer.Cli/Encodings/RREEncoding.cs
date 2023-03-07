@@ -14,6 +14,7 @@ namespace VNCSniffer.Cli.Encodings
         public ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index)
         {
             var bpp = e.Connection.Format != null ? e.Connection.Format.BitsPerPixel : 32;
+            bpp /= 8;
             var headerLength = 4 + bpp;
             if (e.Data.Length < index + headerLength)
                 return ProcessStatus.NeedsMoreBytes;
