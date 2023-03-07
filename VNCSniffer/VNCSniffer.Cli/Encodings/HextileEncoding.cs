@@ -30,9 +30,9 @@ namespace VNCSniffer.Cli.Encodings
                 return ProcessStatus.NeedsMoreBytes;
             //TODO: remove this prev check as its probably not needed?
 
-            //TODO: hextile
-            //TODO: var bgColor = null;
-            //TODO: var fgColor = null;
+            //TODO: make this into Pixel/color class?
+            ReadOnlySpan<byte> bgColor = null;
+            ReadOnlySpan<byte> fgColor = null;
             for (var i = 0; i < numTiles; i++)
             {
                 // may not have enough bytes for the header
@@ -60,7 +60,7 @@ namespace VNCSniffer.Cli.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     //TODO: parse bg color
-                    //bgColor = e.Data[index..];
+                    bgColor = e.Data[index..];
                     index += bpp;
                 }
 
@@ -71,7 +71,7 @@ namespace VNCSniffer.Cli.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     //TODO: parse fg color
-                    //fgColor = e.Data[index..];
+                    fgColor = e.Data[index..];
                     index += bpp;
                 }
 
@@ -103,12 +103,11 @@ namespace VNCSniffer.Cli.Encodings
                 //TODO: draw bg
                 for (var j = 0; j < numberOfSubrects; j++) 
                 {
-                    //TODO: set clr to fgcolor
-                    //var clr = fgColor;
+                    var clr = fgColor;
                     if (subrectsColored)
                     {
                         //TODO: read pixel;
-                        //clr = e.Data[index..];
+                        clr = e.Data[index..];
                         index += bpp;
                     }
                     // xy and wh are merged x and y/w and h values.
