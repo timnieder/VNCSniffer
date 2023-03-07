@@ -36,11 +36,13 @@ namespace VNCSniffer.Cli.Encodings
             //TODO: make this into Pixel/color class?
             ReadOnlySpan<byte> bgColor = null;
             ReadOnlySpan<byte> fgColor = null;
-            for (var i = 0; i < numTilesRow; i++)
+            var tileX = ev.x;
+            var tileY = ev.y;
+            for (var i = 0; i < numTilesRow; i++, tileY += 16)
             {
                 // the last row can be smaller than 16px high
                 var tileH = i == numTilesRow - 1 ? ev.h % 16 : 16;
-                for (var j = 0; j < numTilesColumn; j++)
+                for (var j = 0; j < numTilesColumn; j++, tileX += 16)
                 {
                     // may not have enough bytes for the header
                     if (e.Data.Length < index)
@@ -132,6 +134,7 @@ namespace VNCSniffer.Cli.Encodings
                         index += 2;
                     }
                 }
+                tileX = ev.x;
             }
 
             return ProcessStatus.Handled;
