@@ -54,6 +54,9 @@ namespace VNCSniffer.Core.Encodings
             var numTiles = numTilesColumn * numTilesRow;
             var tileX = ev.x;
             var tileY = ev.y;
+            //TODO: make into pixel array
+            ReadOnlySpan<byte> palette = null;
+            //TODO: use different palettes for palette and paletteRLE?
             for (var i = 0; i < numTilesRow; i++, tileY += tileSize)
             {
                 // the last row can be smaller than 16px high
@@ -68,10 +71,7 @@ namespace VNCSniffer.Core.Encodings
                     var tileW = j == numTilesColumn - 1 ? ev.w % tileSize : tileSize;
 
                     var subencoding = data[index];
-                    index += 1;
-                    //TODO: make into pixel array
-                    ReadOnlySpan<byte> palette = null;
-                    //TODO: use different palettes for palette and paletteRLE?
+                    index++;
                     switch ((SubencodingType)subencoding)
                     {
                         case SubencodingType.Raw: //TODO: just call RawEncoding.Handle here?
