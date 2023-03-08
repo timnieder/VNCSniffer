@@ -53,6 +53,11 @@ namespace VNCSniffer.Core.Messages
                 DataArray = data;
             }
 
+            public void SetData(byte[] data)
+            {
+                DataArray = data;
+            }
+
             public void Log(string text) => Connection.LogData(Source, SourcePort, Destination, DestinationPort, text);
         }
 
