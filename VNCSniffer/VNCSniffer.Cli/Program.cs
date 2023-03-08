@@ -4,7 +4,8 @@ using SharpPcap;
 using SharpPcap.LibPcap;
 using System.Diagnostics;
 using System.Net;
-using VNCSniffer.Cli.Messages;
+using VNCSniffer.Core;
+using VNCSniffer.Core.Messages;
 
 namespace VNCSniffer.Cli
 {
@@ -136,13 +137,13 @@ namespace VNCSniffer.Cli
             }
             // Our connection isnt initialized yet (or so we think)
             // Therefore we check from the laststate if any messages can be parsed
-            var ev = new Messages.Messages.MessageEvent(source, sourcePort, dest, destPort, connection, buffer);
+            var ev = new Messages.MessageEvent(source, sourcePort, dest, destPort, connection, buffer);
             if (connection.LastState < State.Initialized)
             {
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
                 {
-                    var handled = Messages.Messages.Handlers[i].Handle(ev);
-                    if (handled == Messages.Messages.ProcessStatus.Handled)
+                    var handled = Messages.Handlers[i].Handle(ev);
+                    if (handled == Messages.ProcessStatus.Handled)
                     {
                         connection.LastState = i;
                         return true;
@@ -171,12 +172,12 @@ namespace VNCSniffer.Cli
                 foreach (var msgHandler in handlers)
                 {
                     var handled = msgHandler.Handle(ev);
-                    if (handled == Messages.Messages.ProcessStatus.Handled)
+                    if (handled == Messages.ProcessStatus.Handled)
                     {
                         connection.SetBuffer(source, sourcePort, null);
                         return true;
                     }
-                    else if (handled == Messages.Messages.ProcessStatus.NeedsMoreBytes)
+                    else if (handled == Messages.ProcessStatus.NeedsMoreBytes)
                     {
                         // save buffer for later processing
                         //TODO: save msg so we can start directly from there, also pls make it directly flow based
@@ -189,13 +190,13 @@ namespace VNCSniffer.Cli
             }
             if (checkClientMsgs)
             {
-                var handled = checkHandlers(Messages.Messages.ClientHandlers);
+                var handled = checkHandlers(Messages.ClientHandlers);
                 if (handled)
                     return true;
             }
             if (checkServerMsgs)
             {
-                var handled = checkHandlers(Messages.Messages.ServerHandlers);
+                var handled = checkHandlers(Messages.ServerHandlers);
                 if (handled)
                     return true;
             }

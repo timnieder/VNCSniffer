@@ -5,9 +5,9 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNCSniffer.Renderer", "VNCSniffer.Renderer\VNCSniffer.Renderer.csproj", "{A977F63A-3D07-4C08-8D47-44CF2C1E987F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNCSniffer", "VNCSniffer\VNCSniffer.csproj", "{306F8554-A442-430E-BA5B-D87114ABC670}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNCSniffer.Cli", "VNCSniffer.Cli\VNCSniffer.Cli.csproj", "{39BF2DCC-3E13-49B9-9001-8FC761E49D3E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNCSniffer.Cli", "VNCSniffer.Cli\VNCSniffer.Cli.csproj", "{39BF2DCC-3E13-49B9-9001-8FC761E49D3E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNCSniffer.Core", "VNCSniffer.Core\VNCSniffer.Core.csproj", "{EE974B55-E757-4B86-805D-BA8006724895}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +19,14 @@ Global
 		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A977F63A-3D07-4C08-8D47-44CF2C1E987F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{306F8554-A442-430E-BA5B-D87114ABC670}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{306F8554-A442-430E-BA5B-D87114ABC670}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{306F8554-A442-430E-BA5B-D87114ABC670}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{306F8554-A442-430E-BA5B-D87114ABC670}.Release|Any CPU.Build.0 = Release|Any CPU
 		{39BF2DCC-3E13-49B9-9001-8FC761E49D3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{39BF2DCC-3E13-49B9-9001-8FC761E49D3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39BF2DCC-3E13-49B9-9001-8FC761E49D3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39BF2DCC-3E13-49B9-9001-8FC761E49D3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE974B55-E757-4B86-805D-BA8006724895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE974B55-E757-4B86-805D-BA8006724895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE974B55-E757-4B86-805D-BA8006724895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE974B55-E757-4B86-805D-BA8006724895}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
