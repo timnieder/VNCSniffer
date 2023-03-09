@@ -133,12 +133,12 @@ namespace VNCSniffer.Core.Encodings
                                     var length = 0;
                                     while (data[index] == 255)
                                     {
-                                        length += data[index];
+                                        length += (data[index] + 1); // runLength - 1, so +1
                                         if (data.Length < index + 1) // length not yet done, so we still need data
                                             return ProcessStatus.NeedsMoreBytes;
                                         index++;
                                     }
-                                    length += data[index];
+                                    length += (data[index] + 1); // (runLength-1) mod 255, so +1
                                     index++;
                                     //TODO: draw the run
                                     tilePixels -= length;
@@ -162,6 +162,7 @@ namespace VNCSniffer.Core.Encodings
                                     return ProcessStatus.NeedsMoreBytes;
 
                                 palette = data[index..(index + paletteSizeInBytes)];
+                                index += paletteSizeInBytes;
                                 // do paletteRLE
                                 var handled = HandlePaletteRLE(data, ref index, tileH, tileW, palette);
                                 if (handled == ProcessStatus.NeedsMoreBytes)
@@ -169,9 +170,12 @@ namespace VNCSniffer.Core.Encodings
                                 break;
                             }
                         default:
-                            Debug.Fail("Unknown TRLE Subencoding");
-                            break;
+                            {
+                                Debug.Fail($"Unknown TRLE Subencoding {subencoding}");
+                                break;
+                            }
                     }
+                    //Console.WriteLine($"Subencoding: {(SubencodingType)subencoding} ({subencoding})");
                 }
                 tileX = ev.x;
             }
@@ -188,7 +192,7 @@ namespace VNCSniffer.Core.Encodings
 
                 var paletteIndex = data[index];
                 var runLength = 1;
-                if (paletteIndex > 128) // top bit set, run longer than 1
+                if (paletteIndex >= 128) // top bit set, run longer than 1
                 {
                     paletteIndex -= 128;
                     // parse the run length
@@ -196,18 +200,29 @@ namespace VNCSniffer.Core.Encodings
                         return ProcessStatus.NeedsMoreBytes;
                     index++;
 
-                    while (data[index] == 255)
+                    runLength = 0;
+                    while (data[index] == 255) //TODO: merge with the one above?
                     {
-                        runLength += data[index];
+                        runLength += (data[index] + 1); // runLength - 1, so +1
                         if (data.Length < index + 1) // length not yet done, so we still need data
                             return ProcessStatus.NeedsMoreBytes;
                         index++;
                     }
-                    runLength += data[index];
+                    runLength += (data[index] + 1); // (runLength-1) mod 255, so +1
+                    // index is increased outside the if
                 }
                 index++;
-                var clr = palette[paletteIndex];
-                // TODO: draw the run
+                byte clr; //TODO: make clr/pixel
+                if (paletteIndex < palette.Length)
+                {
+                    clr = palette[paletteIndex];
+                    // TODO: draw the run
+                }
+                else
+                {
+                    Debug.Fail("PaletteIndex out-of-range");
+                }
+                
                 tilePixels -= runLength;
             }
             return ProcessStatus.Handled;

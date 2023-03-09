@@ -22,6 +22,7 @@ namespace VNCSniffer.Core.Encodings
             var zlibData = e.Data[index..(index + dataLength)];
             //TODO: can we just do this? dont we need a zlib object?
             var data = ZlibStream.UncompressBuffer(zlibData.ToArray());
+            //FIXME: Bad state (unknown compression method (0x00))
 
             return TRLEEncoding.Decode(data, e.Connection.Format, ev, ref index, 64);
         }
