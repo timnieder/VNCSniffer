@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static VNCSniffer.Core.Messages.Messages;
+﻿using static VNCSniffer.Core.Messages.Messages;
 using VNCSniffer.Core.Messages.Server;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Collections;
+using Sewer56.BitStream;
+using Sewer56.BitStream.ByteStreams;
 
 namespace VNCSniffer.Core.Encodings
 {
@@ -232,20 +228,33 @@ namespace VNCSniffer.Core.Encodings
         private static void HandlePackedPixels(ReadOnlySpan<byte> data, ref int index, int tileH, int tileW, ReadOnlySpan<byte> palette, byte paletteSize, int packedPixelsLength)
         {
             var packedPixelsBytes = data[(index)..(index + packedPixelsLength)];
-            var packedPixels = new BitArray(packedPixelsBytes.ToArray());
-            //TODO: how 2 handle bits
+            //TODO: make own IByteStream implementation for readonlyspans to avoid copying?
+            var stream = new ArrayByteStream(packedPixelsBytes.ToArray());
+            var packedPixels = new BitStream<ArrayByteStream>(stream);
             var indexSize = GetPaletteIndexSize(paletteSize);
             for (var y = 0; y < tileH; y++)
             {
                 for (var x = 0; x < tileW; x++)
                 {
-                    //TODO: get palette index
-                    //TODO: draw pixel in framebuffer
+                    // get palette index
+                    var paletteIndex = packedPixels.Read<byte>(indexSize);
+                    byte clr; //TODO: make clr/pixel //TODO: merge with other paletteindex access
+                    if (paletteIndex < palette.Length)
+                    {
+                        clr = palette[paletteIndex];
+                        //TODO: draw pixel in framebuffer
+                    }
+                    else
+                    {
+                        Debug.Fail("PaletteIndex out-of-range");
+                    }
                 }
                 var bitCount = (tileW * indexSize);
-                if (bitCount % 8 != 0) // skip padding if row isn't a multiple of 8
+                var missingBits = (byte)(bitCount % 8);
+                if (missingBits != 0) // skip padding if row isn't a multiple of 8
                 {
-                    //TODO: skip to next byte
+                    // skip to next byte
+                    packedPixels.SeekRelative(0, missingBits);
                 }
             }
             index += packedPixelsLength;
