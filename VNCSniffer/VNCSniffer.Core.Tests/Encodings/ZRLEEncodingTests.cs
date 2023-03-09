@@ -10,5 +10,5 @@ namespace VNCSniffer.Core.Tests.Encodings
         public override string FilePath => "zrle.packet";
         public override ushort PacketW => 300;
         public override ushort PacketH => 300;
-    }
+    } //TODO: test mid connection ZRLE packages
 }
