@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VNCSniffer.Core.Messages.Server;
+﻿using VNCSniffer.Core.Messages.Server;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Encodings

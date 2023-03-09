@@ -1,9 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using System.Buffers.Binary;
-using System.Diagnostics;
-using System.Net;
-using System.Text;
-using VNCSniffer.Core.Encodings;
+﻿using System.Net;
 using VNCSniffer.Core.Messages.Client;
 using VNCSniffer.Core.Messages.Handshake;
 using VNCSniffer.Core.Messages.Handshake.SecurityTypes;

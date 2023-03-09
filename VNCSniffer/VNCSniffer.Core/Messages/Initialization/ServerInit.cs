@@ -1,9 +1,5 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Buffers.Binary;
 using System.Text;
-using System.Threading.Tasks;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Messages.Initialization
@@ -25,7 +21,7 @@ namespace VNCSniffer.Core.Messages.Initialization
                 return ProcessStatus.Invalid;
 
             var name = Encoding.Default.GetString(ev.Data[24..]);
-            
+
             ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort);
             ev.Connection.Width = width;
             ev.Connection.Height = height;

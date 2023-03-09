@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VNCSniffer.Core.Messages;
-using VNCSniffer.Core.Messages.Handshake;
+﻿using VNCSniffer.Core.Messages;
 using VNCSniffer.Core.Messages.Handshake.SecurityTypes;
 using static VNCSniffer.Core.Messages.Messages;
 

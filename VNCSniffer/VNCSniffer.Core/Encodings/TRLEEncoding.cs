@@ -1,9 +1,9 @@
-﻿using static VNCSniffer.Core.Messages.Messages;
-using VNCSniffer.Core.Messages.Server;
+﻿using Sewer56.BitStream;
+using Sewer56.BitStream.ByteStreams;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using Sewer56.BitStream;
-using Sewer56.BitStream.ByteStreams;
+using VNCSniffer.Core.Messages.Server;
+using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Encodings
 {
@@ -218,7 +218,7 @@ namespace VNCSniffer.Core.Encodings
                 {
                     Debug.Fail("PaletteIndex out-of-range");
                 }
-                
+
                 tilePixels -= runLength;
             }
             return ProcessStatus.Handled;

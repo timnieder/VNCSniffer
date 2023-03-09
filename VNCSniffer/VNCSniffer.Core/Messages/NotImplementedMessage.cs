@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace VNCSniffer.Core.Messages
+﻿namespace VNCSniffer.Core.Messages
 {
     public class NotImplementedMessage : IVNCMessage
     {

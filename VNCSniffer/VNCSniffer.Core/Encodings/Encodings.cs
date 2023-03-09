@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static VNCSniffer.Core.Messages.Messages;
-using VNCSniffer.Core.Messages;
-using System.Buffers.Binary;
+﻿using VNCSniffer.Core.Encodings.Pseudo;
 using VNCSniffer.Core.Messages.Server;
-using VNCSniffer.Core.Encodings.Pseudo;
+using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Encodings
 {

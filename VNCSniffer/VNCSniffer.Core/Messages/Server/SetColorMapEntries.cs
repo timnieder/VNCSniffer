@@ -1,9 +1,4 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Buffers.Binary;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Messages.Server
@@ -22,7 +17,7 @@ namespace VNCSniffer.Core.Messages.Server
             //TODO: padding check?
             // 1 byte padding
             var firstColor = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
-            var numberOfColors = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[2..]);
+            var numberOfColors = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[4..]);
             var end = 6 + numberOfColors * 6;
             if (ev.Data.Length != end)
                 return ProcessStatus.Invalid;

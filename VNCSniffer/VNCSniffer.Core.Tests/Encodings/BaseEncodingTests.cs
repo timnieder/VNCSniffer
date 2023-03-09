@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using static VNCSniffer.Core.Messages.Messages;
 using VNCSniffer.Core.Encodings;
 using VNCSniffer.Core.Messages.Server;
+using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Tests.Encodings
 {
