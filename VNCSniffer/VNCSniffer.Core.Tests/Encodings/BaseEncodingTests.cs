@@ -38,42 +38,33 @@ namespace VNCSniffer.Core.Tests.Encodings
             }
         }
 
-        //TODO: merge those 2 tests?
         [TestMethod]
-        public void TestValid()
-        {
-            var data = GetData();
-            Console.WriteLine($"Data ({data.Length} Bytes): {Convert.ToHexString(data[..10])}...");
-
-            var connection = new Connection();
-            connection.Format = Format;
-            var e = new MessageEvent(IPAddress.None, 0, IPAddress.None, 0, connection, data);
-            var ev = new FramebufferUpdateEvent(0, 0, PacketW, PacketH);
-            var index = 0;
-            var handled = Encoding.Parse(e, ev, ref index);
-            Assert.AreEqual(ProcessStatus.Handled, handled);
-        }
-
-        [TestMethod]
-        public void TestNeedMoreBytes()
+        public void TestAll()
         {
             // Setup
             var data = GetData();
             Console.WriteLine($"Data ({data.Length} Bytes): {Convert.ToHexString(data[..10])}...");
-            var encoding = new RawEncoding();
             var connection = new Connection();
             connection.Format = Format;
             var e = new MessageEvent(IPAddress.None, 0, IPAddress.None, 0, connection, null);
             var ev = new FramebufferUpdateEvent(0, 0, PacketW, PacketH);
 
             // Test from every byte, except the last one
+            var index = 0;
+            ProcessStatus handled;
             for (var i = 0; i < data.Length - 1; i++)
             {
                 e.SetData(data[..i]);
-                var index = 0;
-                var handled = encoding.Parse(e, ev, ref index);
+                index = 0;
+                handled = Encoding.Parse(e, ev, ref index);
                 Assert.AreEqual(ProcessStatus.NeedsMoreBytes, handled);
             }
+
+            // Then do the last one
+            e.SetData(data);
+            index = 0;
+            handled = Encoding.Parse(e, ev, ref index);
+            Assert.AreEqual(ProcessStatus.Handled, handled);
         }
     }
 }
