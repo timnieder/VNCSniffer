@@ -74,6 +74,7 @@ namespace VNCSniffer.Core.Tests.Encodings
             }
         }
 
+        [TestMethod]
         public void TestHandled()
         {
             // Setup

@@ -60,7 +60,7 @@ namespace VNCSniffer.Core.Encodings
                 for (var j = 0; j < numTilesColumn; j++, tileX += tileSize)
                 {
                     // may not have enough bytes for the header
-                    if (data.Length < index)
+                    if (data.Length < index + 1)
                         return ProcessStatus.NeedsMoreBytes;
 
                     // last tile in a row can be smaller than 16px wide
@@ -191,10 +191,10 @@ namespace VNCSniffer.Core.Encodings
                 if (paletteIndex >= 128) // top bit set, run longer than 1
                 {
                     paletteIndex -= 128;
+                    index++;
                     // parse the run length
                     if (data.Length < index + 1)
                         return ProcessStatus.NeedsMoreBytes;
-                    index++;
 
                     runLength = 0;
                     while (data[index] == 255) //TODO: merge with the one above?

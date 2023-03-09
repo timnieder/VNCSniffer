@@ -39,7 +39,7 @@ namespace VNCSniffer.Core.Encodings
                 for (var j = 0; j < numTilesColumn; j++, tileX += 16)
                 {
                     // may not have enough bytes for the header
-                    if (e.Data.Length < index)
+                    if (e.Data.Length < index + 1)
                         return ProcessStatus.NeedsMoreBytes;
 
                     // last tile in a row can be smaller than 16px wide
