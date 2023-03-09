@@ -29,7 +29,7 @@ namespace VNCSniffer.Core.Encodings
                 if (e.Data.Length < index + length)
                     return ProcessStatus.NeedsMoreBytes;
 
-                //var subrectClr = ; //TODO: parse pixel
+                //var subrectClr = e.Data[index..(index + bpp)]; //TODO: parse pixel
                 var x = e.Data[(index + bpp)..];
                 var y = e.Data[(index + bpp + 2)..];
                 var w = e.Data[(index + bpp + 4)..];

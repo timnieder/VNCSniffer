@@ -30,6 +30,12 @@ namespace VNCSniffer.Core.Messages.Handshake.SecurityTypes
             if (ev.Data.Length != 16)
                 return ProcessStatus.Invalid;
 
+            if (ev.Connection.Challenge == null) // shouldn't happen?
+            {
+                ev.Connection.Challenge = ev.Data.ToArray();
+                return ProcessStatus.Handled;
+            }
+
             ev.Connection.ChallengeResponse = ev.Data.ToArray(); //TODO: better thing than copy?
             ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort); // sent by client
             ev.Log($"Response: {BitConverter.ToString(ev.Connection.ChallengeResponse)}");

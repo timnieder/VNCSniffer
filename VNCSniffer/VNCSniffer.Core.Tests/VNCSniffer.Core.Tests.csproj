@@ -20,7 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Messages\" />
+    <Folder Include="Messages\Client\" />
+    <Folder Include="Messages\Server\" />
   </ItemGroup>
 
 </Project>

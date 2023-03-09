@@ -33,7 +33,7 @@ namespace VNCSniffer.Core.Messages.Handshake
             if (ev.Data.Length != 1)
                 return ProcessStatus.Invalid;
 
-            if (ev.Connection.Client != null && !ev.Connection.Client.Equals(ev.Source))
+            if (ev.Connection.Client != null && (!ev.Connection.Client.Equals(ev.Source) || !ev.Connection.ClientPort.Equals(ev.SourcePort)))
                 return ProcessStatus.Invalid; //TODO: shouldnt happen?
 
             var securityType = ev.Data[0];

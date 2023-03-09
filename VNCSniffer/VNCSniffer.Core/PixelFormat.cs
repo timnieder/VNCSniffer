@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using System.Drawing;
 
 namespace VNCSniffer.Core
 {
@@ -45,6 +46,28 @@ namespace VNCSniffer.Core
             RedShift = bytes[10];
             GreenShift = bytes[11];
             BlueShift = bytes[12];
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is PixelFormat))
+                return base.Equals(obj);
+
+            return Equals((PixelFormat)obj);
+        }
+
+        public bool Equals(PixelFormat obj)
+        {
+            return BitsPerPixel == obj.BitsPerPixel
+                && Depth == obj.Depth
+                && BigEndian == obj.BigEndian
+                && TrueColor == obj.TrueColor
+                && RedMax == obj.RedMax
+                && GreenMax == obj.GreenMax
+                && BlueMax == obj.BlueMax
+                && RedShift == obj.RedShift
+                && GreenShift == obj.GreenShift
+                && BlueShift == obj.BlueShift;
         }
     }
 }

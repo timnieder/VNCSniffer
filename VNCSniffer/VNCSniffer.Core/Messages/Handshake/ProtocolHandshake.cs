@@ -35,9 +35,8 @@ namespace VNCSniffer.Core.Messages.Handshake
                 {
                     ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort);
                 }
-                else //TODO: we shouldnt even hit this?
+                else //TODO: we shouldnt even hit this? so only tests
                 {
-                    Debug.Fail("ProtocolVersion not set");
                     ev.Connection.ProtocolVersion = str;
                 }
                 ev.Log($"ProtocolVersion: {str.TrimEnd()}");
