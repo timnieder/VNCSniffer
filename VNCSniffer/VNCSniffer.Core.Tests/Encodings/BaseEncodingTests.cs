@@ -9,8 +9,11 @@ namespace VNCSniffer.Core.Tests.Encodings
     {
         public abstract IEncoding Encoding { get; }
         public abstract string FilePath { get; }
+        public virtual ushort PacketX { get; } = 0;
+        public virtual ushort PacketY { get; } = 0;
         public abstract ushort PacketW { get; }
         public abstract ushort PacketH { get; }
+
         public static readonly PixelFormat Format = new()
         {
             BitsPerPixel = 32,
@@ -55,11 +58,11 @@ namespace VNCSniffer.Core.Tests.Encodings
                 Format = Format
             };
             Event = new MessageEvent(IPAddress.None, 0, IPAddress.None, 0, Connection, null);
-            UpdateEvent = new FramebufferUpdateEvent(0, 0, PacketW, PacketH);
+            UpdateEvent = new FramebufferUpdateEvent(PacketX, PacketY, PacketW, PacketH);
         }
 
         [TestMethod]
-        public void TestNeedMoreBytes()
+        public virtual void TestNeedMoreBytes()
         {
             // Setup
             Setup();
@@ -75,7 +78,7 @@ namespace VNCSniffer.Core.Tests.Encodings
         }
 
         [TestMethod]
-        public void TestHandled()
+        public virtual void TestHandled()
         {
             // Setup
             Setup();

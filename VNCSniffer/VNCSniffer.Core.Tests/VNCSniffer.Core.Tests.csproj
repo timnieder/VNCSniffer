@@ -19,8 +19,4 @@
     <ProjectReference Include="..\VNCSniffer.Core\VNCSniffer.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Encodings\Pseudo\" />
-  </ItemGroup>
-
 </Project>

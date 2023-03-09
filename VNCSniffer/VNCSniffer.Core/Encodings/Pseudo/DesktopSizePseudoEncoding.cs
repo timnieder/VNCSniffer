@@ -9,6 +9,8 @@ namespace VNCSniffer.Core.Encodings.Pseudo
         {
             // no content
             //TODO: resize framebuffer. x+y ignored, w+h as the new size
+            e.Connection.Width = ev.w;
+            e.Connection.Height = ev.h;
             return ProcessStatus.Handled;
         }
     }
