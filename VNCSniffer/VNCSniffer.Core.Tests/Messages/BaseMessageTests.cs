@@ -31,7 +31,7 @@ namespace VNCSniffer.Core.Tests.Messages
 
         protected virtual byte[] GetData(string filePath)
         {
-            var path = Path.GetFullPath($"../../../Data/{filePath}");
+            var path = Path.GetFullPath($"../../../Data/Messages/{filePath}");
             using (var file = File.Open(path, FileMode.Open, FileAccess.Read))
             {
                 using (var sr = new StreamReader(file))

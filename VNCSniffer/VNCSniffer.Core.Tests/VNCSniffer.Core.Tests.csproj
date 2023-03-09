@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Messages\Client\" />
+    <Folder Include="Encodings\Pseudo\" />
     <Folder Include="Messages\Server\" />
   </ItemGroup>
 

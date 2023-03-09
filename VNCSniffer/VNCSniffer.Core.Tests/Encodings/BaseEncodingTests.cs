@@ -25,9 +25,14 @@ namespace VNCSniffer.Core.Tests.Encodings
             BlueShift = 0,
         };
 
-        protected virtual byte[] GetData()
+        protected byte[] Data;
+        protected Connection Connection;
+        protected MessageEvent Event;
+        protected FramebufferUpdateEvent UpdateEvent;
+
+        protected virtual byte[] GetData(string filePath)
         {
-            var path = Path.GetFullPath($"../../../Data/{FilePath}");
+            var path = Path.GetFullPath($"../../../Data/Encodings/{filePath}");
             using (var file = File.Open(path, FileMode.Open, FileAccess.Read))
             {
                 using (var sr = new StreamReader(file))
@@ -38,32 +43,45 @@ namespace VNCSniffer.Core.Tests.Encodings
             }
         }
 
+        protected virtual void Setup()
+        {
+            Data = GetData(FilePath);
+            var previewData = Data;
+            if (previewData.Length > 10)
+                previewData = Data[..10];
+            Console.WriteLine($"Data ({Data.Length} Bytes): {Convert.ToHexString(previewData)}...");
+            Connection = new Connection
+            {
+                Format = Format
+            };
+            Event = new MessageEvent(IPAddress.None, 0, IPAddress.None, 0, Connection, null);
+            UpdateEvent = new FramebufferUpdateEvent(0, 0, PacketW, PacketH);
+        }
+
         [TestMethod]
-        public void TestAll()
+        public void TestNeedMoreBytes()
         {
             // Setup
-            var data = GetData();
-            Console.WriteLine($"Data ({data.Length} Bytes): {Convert.ToHexString(data[..10])}...");
-            var connection = new Connection();
-            connection.Format = Format;
-            var e = new MessageEvent(IPAddress.None, 0, IPAddress.None, 0, connection, null);
-            var ev = new FramebufferUpdateEvent(0, 0, PacketW, PacketH);
+            Setup();
 
             // Test from every byte, except the last one
-            var index = 0;
-            ProcessStatus handled;
-            for (var i = 0; i < data.Length - 1; i++)
+            for (var i = 0; i < Data.Length - 1; i++)
             {
-                e.SetData(data[..i]);
-                index = 0;
-                handled = Encoding.Parse(e, ev, ref index);
+                Event.SetData(Data[..i]);
+                var index = 0;
+                var handled = Encoding.Parse(Event, UpdateEvent, ref index);
                 Assert.AreEqual(ProcessStatus.NeedsMoreBytes, handled);
             }
+        }
 
-            // Then do the last one
-            e.SetData(data);
-            index = 0;
-            handled = Encoding.Parse(e, ev, ref index);
+        public void TestHandled()
+        {
+            // Setup
+            Setup();
+
+            Event.SetData(Data);
+            var index = 0;
+            var handled = Encoding.Parse(Event, UpdateEvent, ref index);
             Assert.AreEqual(ProcessStatus.Handled, handled);
         }
     }
