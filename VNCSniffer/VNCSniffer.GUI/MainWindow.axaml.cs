@@ -7,7 +7,7 @@ namespace VNCSniffer.GUI
 {
     public partial class MainWindow : Window
     {
-        public WriteableBitmap WriteableBitmap = new(new PixelSize(300, 300), new Vector(96, 96), Avalonia.Platform.PixelFormat.Rgba8888, Avalonia.Platform.AlphaFormat.Opaque);
+        public WriteableBitmap Bitmap = new(new PixelSize(300, 300), new Vector(96, 96), Avalonia.Platform.PixelFormat.Rgba8888, Avalonia.Platform.AlphaFormat.Opaque);
         public MainWindow()
         {
             InitializeComponent();
@@ -22,15 +22,16 @@ namespace VNCSniffer.GUI
 
             //TODO: init writeablebitmap
             var image = this.FindControl<Image>("framebuffer");
-            image.Source = WriteableBitmap;
+            image.Source = Bitmap;
+
             unsafe
             {
-                using var buffer = WriteableBitmap.Lock();
-                var adr = (byte*)buffer.Address;
-                for (var y = 0; y < buffer.Size.Height; y++)
+                using var bmp = Bitmap.Lock();
+                var adr = (byte*)bmp.Address;
+                for (var y = 0; y < bmp.Size.Height; y++)
                 {
-                    var rowOffset = y * buffer.RowBytes;
-                    for (var x = 0; x < buffer.Size.Width; x++)
+                    var rowOffset = y * bmp.RowBytes;
+                    for (var x = 0; x < bmp.Size.Width; x++)
                     {
                         var pixelOffset = rowOffset + x * 4;
                         adr[pixelOffset] = 0x00;     // R
