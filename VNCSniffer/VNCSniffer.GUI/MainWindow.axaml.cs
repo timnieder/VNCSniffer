@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
+using System.Runtime.CompilerServices;
 
 namespace VNCSniffer.GUI
 {
@@ -20,13 +21,24 @@ namespace VNCSniffer.GUI
             if (Design.IsDesignMode)
                 return;
 
+#if DEBUG
+            this.AttachDevTools();
+#endif
+
             //TODO: init writeablebitmap
             var image = this.FindControl<Image>("framebuffer");
             image.Source = Bitmap;
 
+            using var bmp = Bitmap.Lock(); //TODO: need using?
+            //TODO: instead do this event based?
+            //TODO: this currently blocks the UI thread
             unsafe
             {
-                using var bmp = Bitmap.Lock();
+                Sniffer.Start((byte*)bmp.Address, bmp.RowBytes * bmp.Size.Height);
+            }
+            /*
+            unsafe
+            {
                 var adr = (byte*)bmp.Address;
                 for (var y = 0; y < bmp.Size.Height; y++)
                 {
@@ -40,7 +52,7 @@ namespace VNCSniffer.GUI
                         adr[pixelOffset + 3] = 0xFF; // A //TODO: can we ignore the alpha part?
                     }
                 }
-            }
+            }*/
         }
     }
 }

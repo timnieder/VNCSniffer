@@ -26,6 +26,8 @@ namespace VNCSniffer.Core
         public byte[]? Challenge;
         public byte[]? ChallengeResponse;
 
+        public unsafe byte* Framebuffer;
+        public int FramebufferLength;
         public void LogData(IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, string text)
         {
             var sourcePrefix = "";
@@ -84,6 +86,37 @@ namespace VNCSniffer.Core
                 Buffer1 = buffer;
             else
                 Buffer2 = buffer;
+        }
+
+        // Drawing
+        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y)
+        {
+            if (Framebuffer == null)
+                return;
+
+            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            bpp /= 8;
+            if (Width == null) //TODO: handle this case
+                return;
+            var bytesPerRow = Width.Value * bpp;
+            var offset = y * bytesPerRow + x * bpp;
+            //TODO: framebuffer size checks, resize if too small
+            var fBuffer = new Span<byte>(Framebuffer, FramebufferLength);
+            //INFO: so the data we get in LE is ARGB, but the bitmap is RGBA
+            //      so we copy the data shifted by one, and then fill the alpha later
+            buffer[1..].CopyTo(fBuffer);
+            // TODO: check if big endian
+
+            // overwrite alpha
+            for (var i = 3; i < buffer.Length; i += 4)
+            {
+                fBuffer[offset + i] = 0xFF;
+            }
+        }
+
+        public void DrawPixel(byte[] clr, ushort x, ushort y)
+        {
+            //TODO: drawpixel/setpixel
         }
     }
 }

@@ -13,7 +13,8 @@ namespace VNCSniffer.Core.Encodings
             if (e.Data.Length < index + length)
                 return ProcessStatus.NeedsMoreBytes;
 
-            //TODO: parse bitmap
+            // draw bitmap
+            e.Connection.DrawRegion(e.Data[index..(index + length)], ev.x, ev.y);
             index += length;
             return ProcessStatus.Handled;
         }
