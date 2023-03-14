@@ -118,14 +118,16 @@ namespace VNCSniffer.Core.Encodings
                             clr = e.Data[index..(index + bpp)];
                             index += bpp;
                         }
+                        //TODO: bigendian check?
                         // xy and wh are merged x and y/w and h values.
                         // The upper 4 bits are x/w and the lower ones being y/h respectively
+                        // w and h are width-1 and height-1
                         var xy = e.Data[index];
                         var x = (ushort)(xy >> 4);
                         var y = (ushort)(xy & 0b00001111);
                         var wh = e.Data[(index + 1)];
-                        var w = (ushort)(wh >> 4);
-                        var h = (ushort)(wh & 0b00001111);
+                        var w = (ushort)((wh >> 4) + 1);
+                        var h = (ushort)((wh & 0b00001111) + 1);
                         // draw subrect
                         var absoluteX = (ushort)(tileX + x);
                         var absoluteY = (ushort)(tileY + y);
