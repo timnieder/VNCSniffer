@@ -119,9 +119,7 @@ namespace VNCSniffer.Core
             var offset = y * bytesPerRow + x * bpp;
             var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
-            //INFO: so the data we get in LE is ARGB, but the bitmap is RGBA
-            //      so we copy the data shifted by one, and then fill the alpha later
-            buffer[1..].CopyTo(fBuffer);
+            buffer.CopyTo(fBuffer);
             // TODO: check if big endian
 
             // overwrite alpha

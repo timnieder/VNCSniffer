@@ -64,7 +64,9 @@ namespace VNCSniffer.Core.Messages.Server
                 var w = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 4)..]);
                 var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 6)..]);
                 var encoding = BinaryPrimitives.ReadInt32BigEndian(ev.Data[(index + 8)..]);
-                index += 12;
+                index += 12; // increment past header
+
+                // Try to handle encoding
                 if (Encodings.Encodings.Handlers.TryGetValue(encoding, out var enc))
                 {
                     var e = new FramebufferUpdateEvent(x, y, w, h);
