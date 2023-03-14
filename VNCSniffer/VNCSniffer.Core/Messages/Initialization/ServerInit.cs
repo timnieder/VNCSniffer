@@ -27,8 +27,23 @@ namespace VNCSniffer.Core.Messages.Initialization
             ev.Connection.Height = height;
             ev.Connection.Format = format;
 
+            ev.Connection.RaiseServerInitEvent(new(width, height, format));
             ev.Log($"ServerInit: Width ({width}), Height ({height}), Name ({name})");
             return ProcessStatus.Handled;
+        }
+    }
+
+    public class ServerInitEvent : EventArgs
+    {
+        public ushort Width;
+        public ushort Height;
+        public PixelFormat Format;
+
+        public ServerInitEvent(ushort width, ushort height, PixelFormat format)
+        {
+            Width = width;
+            Height = height;
+            Format = format;
         }
     }
 }

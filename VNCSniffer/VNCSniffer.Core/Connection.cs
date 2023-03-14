@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using VNCSniffer.Core.Messages;
+using VNCSniffer.Core.Messages.Initialization;
 
 namespace VNCSniffer.Core
 {
@@ -26,8 +27,17 @@ namespace VNCSniffer.Core
         public byte[]? Challenge;
         public byte[]? ChallengeResponse;
 
-        public unsafe byte* Framebuffer;
-        public int FramebufferLength;
+        private unsafe byte* framebuffer;
+        private int framebufferLength;
+        public unsafe Span<byte> Framebuffer => new(framebuffer, framebufferLength);
+
+        // Events
+        public event EventHandler<UnknownMessageEvent> OnUnknownMessage;
+        public void RaiseUnknownMessageEvent(UnknownMessageEvent e) => OnUnknownMessage?.Invoke(this, e);
+        public event EventHandler<ServerInitEvent> OnServerInit;
+        public void RaiseServerInitEvent(ServerInitEvent e) => OnServerInit?.Invoke(this, e);
+
+
         public void LogData(IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, string text)
         {
             var sourcePrefix = "";
@@ -88,10 +98,16 @@ namespace VNCSniffer.Core
                 Buffer2 = buffer;
         }
 
+        public unsafe void SetFramebuffer(byte* framebuffer, int length)
+        {
+            this.framebuffer = framebuffer;
+            this.framebufferLength = length;
+        }
+
         // Drawing
         public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y)
         {
-            if (Framebuffer == null)
+            if (framebuffer == null)
                 return;
 
             var bpp = Format != null ? Format.BitsPerPixel : 32;
@@ -100,8 +116,8 @@ namespace VNCSniffer.Core
                 return;
             var bytesPerRow = Width.Value * bpp;
             var offset = y * bytesPerRow + x * bpp;
+            var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
-            var fBuffer = new Span<byte>(Framebuffer, FramebufferLength);
             //INFO: so the data we get in LE is ARGB, but the bitmap is RGBA
             //      so we copy the data shifted by one, and then fill the alpha later
             buffer[1..].CopyTo(fBuffer);
@@ -117,6 +133,15 @@ namespace VNCSniffer.Core
         public void DrawPixel(byte[] clr, ushort x, ushort y)
         {
             //TODO: drawpixel/setpixel
+        }
+    }
+
+    public class UnknownMessageEvent : EventArgs
+    {
+        public byte[] Data;
+        public UnknownMessageEvent(byte[] data)
+        {
+            Data = data;
         }
     }
 }

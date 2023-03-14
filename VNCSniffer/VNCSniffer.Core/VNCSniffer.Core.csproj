@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="DotNetZip" Version="1.16.0" />
+    <PackageReference Include="PacketDotNet" Version="1.4.7" />
+    <PackageReference Include="packetnet-connections" Version="1.3.0" />
     <PackageReference Include="Sewer56.BitStream" Version="1.3.0" />
   </ItemGroup>
 
