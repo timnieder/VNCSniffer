@@ -107,6 +107,36 @@ namespace VNCSniffer.Core
         }
 
         // Drawing
+        public unsafe void CopyRegion(ushort srcX, ushort srcY, ushort w, ushort h, ushort destX, ushort destY)
+        {
+            if (framebuffer == null)
+                return;
+
+            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            bpp /= 8;
+            if (Width == null) //TODO: handle this case
+                return;
+            var bytesPerRow = Width.Value * bpp;
+            var srcOffset = srcY * bytesPerRow + srcX * bpp;
+            var destOffset = destY * bytesPerRow + destX * bpp;
+            var fBuffer = Framebuffer;
+            //TODO: framebuffer size checks, resize if too small
+            if (w == Width)
+            {
+                var length = w * h * bpp;
+                fBuffer[srcOffset..(srcOffset + length)].CopyTo(fBuffer[destOffset..]);
+            }
+            else // if we've got a smaller rect, we need to copy per line
+            {
+                var lineLength = w * bpp;
+                for (var i = 0; i < h; i++)
+                {
+                    var lineOffset = i * bytesPerRow;
+                    fBuffer[(srcOffset + lineOffset)..(srcOffset + lineOffset + lineLength)].CopyTo(fBuffer[(destOffset + lineOffset)..]);
+                }
+            }
+        }
+
         public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h)
         {
             if (framebuffer == null)
@@ -123,7 +153,7 @@ namespace VNCSniffer.Core
             // TODO: check if big endian
             if (w == Width)
             {
-                buffer.CopyTo(fBuffer);
+                buffer.CopyTo(fBuffer[offset..]);
             }
             else // if we've got a smaller rect, we need to copy per line
             {
@@ -143,7 +173,7 @@ namespace VNCSniffer.Core
             }
         }
 
-        public void DrawPixel(byte[] clr, ushort x, ushort y)
+        public void DrawPixel(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort length = 1)
         {
             //TODO: drawpixel/setpixel
         }
