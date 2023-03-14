@@ -22,7 +22,6 @@ namespace VNCSniffer.Core.Encodings
 
     public interface IEncoding
     {
-        //TODO: they also need a framebuffer
         public abstract ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index);
     }
 }

@@ -10,11 +10,15 @@ namespace VNCSniffer.GUI
 {
     public class Sniffer
     {
+        public static MainWindow MainWindow;
         public static unsafe void Start()
         {
             //string path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\PythonServerTightClient.pcapng";
             string path = null;
             //string path = "C:\\Users\\Exp\\Desktop\\1.pcapng";
+
+            var lifetime = (IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
+            MainWindow = (MainWindow)lifetime.MainWindow;
 
             ICaptureDevice device;
             if (path != null)
@@ -49,6 +53,17 @@ namespace VNCSniffer.GUI
         {
             //TODO: create new tab
             e.Connection.OnServerInit += Connection_OnServerInit;
+            e.Connection.OnFramebufferResize += Connection_OnFramebufferResize;
+        }
+
+        private static void Connection_OnFramebufferResize(object? sender, ResizeFramebufferEvent e)
+        {
+            if (sender is not Connection)
+                return;
+
+            // notify the bitmap holder to resize the framebuffer
+            var con = (Connection)sender;
+            MainWindow.ResizeFramebuffer(con, e.Width, e.Height);
         }
 
         private static unsafe void Connection_OnServerInit(object? sender, Core.Messages.Initialization.ServerInitEvent e)
@@ -58,10 +73,7 @@ namespace VNCSniffer.GUI
 
             // notify the bitmap holder to resize the framebuffer
             var con = (Connection)sender;
-            //TODO: rather cache mainwindow on startup?
-            var lifetime = (IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
-            var mainWindow = (MainWindow)lifetime.MainWindow;
-            mainWindow.ResizeFramebuffer(con, e.Width, e.Height);
+            MainWindow.ResizeFramebuffer(con, e.Width, e.Height);
         }
     }
 }

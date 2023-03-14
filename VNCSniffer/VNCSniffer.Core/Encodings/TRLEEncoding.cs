@@ -123,6 +123,8 @@ namespace VNCSniffer.Core.Encodings
                             {
                                 // rle till the tile ends
                                 var tilePixels = tileH * tileW;
+                                var curXOffset = 0;
+                                var curYOffset = 0;
                                 while (tilePixels > 0)
                                 {
                                     if (data.Length < index + bpp + 1) // atleast one 
@@ -140,7 +142,23 @@ namespace VNCSniffer.Core.Encodings
                                     }
                                     length += (data[index] + 1); // (runLength-1) mod 255, so +1
                                     index++;
-                                    //TODO: draw the run; we gotta watch if we have a line break
+                                    // draw the run
+                                    var toWrite = length;
+                                    while (toWrite > 0) // draw until no more left to write
+                                    {
+                                        var cur = toWrite;
+                                        if (toWrite > tileW) // we can only draw 16 at a time
+                                            cur = tileW;
+                                        connection.DrawPixel(pixelValue, (ushort)(tileX + curXOffset), (ushort)(tileY + curYOffset), (ushort)cur);
+                                        toWrite -= cur;
+                                        // offset the cursor by the length we've written
+                                        curXOffset += cur;
+                                        if (curXOffset >= tileW) // if we've written a line, go to the beginning of the next line
+                                        {
+                                            curXOffset = 0;
+                                            curYOffset += 1;
+                                        }
+                                    }
                                     tilePixels -= length;
                                 }
                                 break;
@@ -185,6 +203,8 @@ namespace VNCSniffer.Core.Encodings
         private static ProcessStatus HandlePaletteRLE(ReadOnlySpan<byte> data, ref int index, Connection connection, int tileX, int tileY, int tileH, int tileW, ReadOnlySpan<byte> palette, int bpp)
         {
             var tilePixels = tileH * tileW;
+            var curXOffset = 0;
+            var curYOffset = 0;
             while (tilePixels > 0)
             {
                 if (data.Length < index + 1) // atleast one index
@@ -213,8 +233,27 @@ namespace VNCSniffer.Core.Encodings
                 }
                 index++;
                 ReadOnlySpan<byte> clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
-                // if (clr != null)
+                if (clr != null)
+                {
                     // TODO: draw the run, watch out for line breaks
+                    // draw the run
+                    var toWrite = runLength;
+                    while (toWrite > 0) // draw until no more left to write
+                    {
+                        var cur = toWrite;
+                        if (toWrite > tileW) // we can only draw 16 at a time
+                            cur = tileW;
+                        connection.DrawPixel(clr, (ushort)(tileX + curXOffset), (ushort)(tileY + curYOffset), (ushort)cur);
+                        toWrite -= cur;
+                        // offset the cursor by the length we've written
+                        curXOffset += cur;
+                        if (curXOffset >= tileW) // if we've written a line, go to the beginning of the next line
+                        {
+                            curXOffset = 0;
+                            curYOffset += 1;
+                        }
+                    }
+                }
 
                 tilePixels -= runLength;
             }

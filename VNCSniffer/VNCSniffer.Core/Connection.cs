@@ -34,10 +34,12 @@ namespace VNCSniffer.Core
         public unsafe Span<byte> Framebuffer => new(framebuffer, framebufferLength);
 
         // Events
-        public event EventHandler<UnknownMessageEvent> OnUnknownMessage;
+        public event EventHandler<UnknownMessageEvent>? OnUnknownMessage;
         public void RaiseUnknownMessageEvent(UnknownMessageEvent e) => OnUnknownMessage?.Invoke(this, e);
-        public event EventHandler<ServerInitEvent> OnServerInit;
+        public event EventHandler<ServerInitEvent>? OnServerInit;
         public void RaiseServerInitEvent(ServerInitEvent e) => OnServerInit?.Invoke(this, e);
+        public event EventHandler<ResizeFramebufferEvent>? OnFramebufferResize;
+        public void RaiseResizeFramebufferEvent(ResizeFramebufferEvent e) => OnFramebufferResize?.Invoke(this, e);
 
 
         public void LogData(IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, string text)
@@ -216,6 +218,17 @@ namespace VNCSniffer.Core
         {
             TCP = tcp;
             Data = data;
+        }
+    }
+
+    public class ResizeFramebufferEvent : EventArgs
+    {
+        public ushort Width;
+        public ushort Height; //TODO: is this enough? smth like keep buffer? pixelformat?
+        public ResizeFramebufferEvent(ushort width, ushort height)
+        {
+            Width = width;
+            Height = height;
         }
     }
 }

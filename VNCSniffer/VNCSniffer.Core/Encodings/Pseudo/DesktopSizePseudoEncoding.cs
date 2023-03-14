@@ -11,6 +11,7 @@ namespace VNCSniffer.Core.Encodings.Pseudo
             //TODO: resize framebuffer. x+y ignored, w+h as the new size
             e.Connection.Width = ev.w;
             e.Connection.Height = ev.h;
+            e.Connection.RaiseResizeFramebufferEvent(new(ev.w, ev.h));
             return ProcessStatus.Handled;
         }
     }

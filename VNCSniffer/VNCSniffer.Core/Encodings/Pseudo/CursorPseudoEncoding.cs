@@ -15,6 +15,7 @@ namespace VNCSniffer.Core.Encodings.Pseudo
             if (e.Data.Length < index + pixelLength + bitmaskLength)
                 return ProcessStatus.NeedsMoreBytes;
 
+            //TODO: this needs an additional framebuffer
             //TODO: parse bitmap
             index += pixelLength;
             //TODO: parse bitmask

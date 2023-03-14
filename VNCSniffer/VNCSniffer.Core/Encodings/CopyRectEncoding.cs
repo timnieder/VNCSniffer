@@ -14,7 +14,7 @@ namespace VNCSniffer.Core.Encodings
 
             var srcXPos = BinaryPrimitives.ReadUInt16BigEndian(e.Data[index..]);
             var srcYPos = BinaryPrimitives.ReadUInt16BigEndian(e.Data[(index + 2)..]);
-            //TODO: copy from framebuffer into framebuffer
+            // copy from framebuffer into framebuffer
             e.Connection.CopyRegion(srcXPos, srcYPos, ev.w, ev.h, ev.x, ev.y);
             index += length;
             return ProcessStatus.Handled;
