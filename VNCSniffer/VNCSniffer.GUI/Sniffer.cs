@@ -1,18 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using PacketDotNet;
-using PacketDotNet.Connections;
 using SharpPcap;
 using SharpPcap.LibPcap;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using VNCSniffer.Core;
-using VNCSniffer.Core.Messages;
 
 namespace VNCSniffer.GUI
 {
@@ -20,7 +12,9 @@ namespace VNCSniffer.GUI
     {
         public static unsafe void Start()
         {
-            string path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\PythonServerTightClient.pcapng";
+            //string path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\PythonServerTightClient.pcapng";
+            string path = null;
+            //string path = "C:\\Users\\Exp\\Desktop\\1.pcapng";
 
             ICaptureDevice device;
             if (path != null)

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using PacketDotNet;
+using System.Net;
 using VNCSniffer.Core.Messages;
 using VNCSniffer.Core.Messages.Initialization;
 
@@ -134,13 +135,20 @@ namespace VNCSniffer.Core
         {
             //TODO: drawpixel/setpixel
         }
+
+        public void DrawSolidRect(byte[] clr, ushort x, ushort y, ushort w, ushort h)
+        {
+            //TODO: drawsolidrect
+        }
     }
 
     public class UnknownMessageEvent : EventArgs
     {
         public byte[] Data;
-        public UnknownMessageEvent(byte[] data)
+        public TcpPacket TCP; //TODO: only copy what we need like source/dest
+        public UnknownMessageEvent(TcpPacket tcp, byte[] data)
         {
+            tcp = tcp;
             Data = data;
         }
     }

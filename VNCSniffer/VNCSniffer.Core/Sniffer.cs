@@ -9,7 +9,7 @@ namespace VNCSniffer.Core
 {
     public class ConnectionFoundEvent : EventArgs
     {
-        public Connection Connection;
+        public Connection Connection; //TODO: add the ipaddresses
         public ConnectionFoundEvent(Connection connection)
         {
             Connection = connection;
@@ -20,6 +20,7 @@ namespace VNCSniffer.Core
         public static Dictionary<TcpConnection, Connection> Connections = new();
         public static TcpConnectionManager TCPConnectionManager = new();
         public static ICaptureDevice Device;
+        //public static CaptureFileWriterDevice WriterDevice;
 
         public static event EventHandler<ConnectionFoundEvent> OnConnectionFound;
 
@@ -41,6 +42,9 @@ namespace VNCSniffer.Core
             filter += ")";
             device.Filter = filter;
             device.OnPacketArrival += Device_OnPacketArrival;
+
+            //WriterDevice = new("1.pcap", FileMode.Create);
+            //WriterDevice.Open(device);
             device.StartCapture();
         }
 
@@ -52,6 +56,7 @@ namespace VNCSniffer.Core
         private static void Device_OnPacketArrival(object sender, PacketCapture e)
         {
             var rawPacket = e.GetPacket();
+            //WriterDevice.Write(rawPacket);
             var p = Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
 
             var tcpPacket = p.Extract<TcpPacket>();
@@ -101,7 +106,7 @@ namespace VNCSniffer.Core
                 return;
 
             // send unknownmsg event
-            connection.RaiseUnknownMessageEvent(new(msg));
+            connection.RaiseUnknownMessageEvent(new(tcp, msg));
         }
 
         private static bool ParseMessage(Connection connection, IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, byte[] data)
