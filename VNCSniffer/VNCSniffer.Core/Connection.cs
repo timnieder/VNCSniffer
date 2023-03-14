@@ -109,6 +109,15 @@ namespace VNCSniffer.Core
         }
 
         // Drawing
+        /// <summary>
+        /// Copies a region inside the buffer to another region inside the buffer.
+        /// </summary>
+        /// <param name="srcX"></param>
+        /// <param name="srcY"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="destX"></param>
+        /// <param name="destY"></param>
         public unsafe void CopyRegion(ushort srcX, ushort srcY, ushort w, ushort h, ushort destX, ushort destY)
         {
             if (framebuffer == null)
@@ -139,6 +148,14 @@ namespace VNCSniffer.Core
             }
         }
 
+        /// <summary>
+        /// Copies the region from the given buffer to the framebuffer.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
         public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h)
         {
             if (framebuffer == null)
@@ -175,11 +192,43 @@ namespace VNCSniffer.Core
             }
         }
 
-        public void DrawPixel(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort length = 1)
+        /// <summary>
+        /// Draws one or multiple pixels in a line. Doesn't support line wrapping.
+        /// </summary>
+        /// <param name="clr"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="length"></param>
+        public unsafe void DrawPixel(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort length = 1)
         {
-            //TODO: drawpixel/setpixel
+            if (framebuffer == null)
+                return;
+
+            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            bpp /= 8;
+            if (Width == null) //TODO: handle this case
+                return;
+            var bytesPerRow = Width.Value * bpp;
+            var offset = y * bytesPerRow + x * bpp;
+            var fBuffer = Framebuffer;
+
+            for (var i = 0; i < length; i++)
+            {
+                fBuffer[offset] = clr[0]; // r
+                fBuffer[offset + 1] = clr[1]; // g
+                fBuffer[offset + 2] = clr[2]; // b
+                fBuffer[offset + 3] = 0xFF; // alpha
+            }
         }
 
+        /// <summary>
+        /// Draws a rectangle in one color.
+        /// </summary>
+        /// <param name="clr"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
         public unsafe void DrawSolidRect(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort w, ushort h)
         {
             if (framebuffer == null)

@@ -235,7 +235,6 @@ namespace VNCSniffer.Core.Encodings
                 ReadOnlySpan<byte> clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
                 if (clr != null)
                 {
-                    // TODO: draw the run, watch out for line breaks
                     // draw the run
                     var toWrite = runLength;
                     while (toWrite > 0) // draw until no more left to write
