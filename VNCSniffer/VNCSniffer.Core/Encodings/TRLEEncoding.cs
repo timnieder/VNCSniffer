@@ -78,7 +78,7 @@ namespace VNCSniffer.Core.Encodings
                                     return ProcessStatus.NeedsMoreBytes;
 
                                 // parse bitmap
-                                connection.DrawRegion(data, tileX, tileY);
+                                connection.DrawRegion(data, tileX, tileY, tileW, tileH);
                                 index += length;
                                 break;
                             }

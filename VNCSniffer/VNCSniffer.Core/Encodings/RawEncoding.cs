@@ -14,7 +14,7 @@ namespace VNCSniffer.Core.Encodings
                 return ProcessStatus.NeedsMoreBytes;
 
             // draw bitmap
-            e.Connection.DrawRegion(e.Data[index..(index + length)], ev.x, ev.y);
+            e.Connection.DrawRegion(e.Data[index..(index + length)], ev.x, ev.y, ev.w, ev.h);
             index += length;
             return ProcessStatus.Handled;
         }

@@ -107,7 +107,7 @@ namespace VNCSniffer.Core
         }
 
         // Drawing
-        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y)
+        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h)
         {
             if (framebuffer == null)
                 return;
@@ -120,8 +120,21 @@ namespace VNCSniffer.Core
             var offset = y * bytesPerRow + x * bpp;
             var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
-            buffer.CopyTo(fBuffer); //TODO: what if we get a smaller rect, copy per line
             // TODO: check if big endian
+            if (w == Width)
+            {
+                buffer.CopyTo(fBuffer);
+            }
+            else // if we've got a smaller rect, we need to copy per line
+            {
+                var lineLength = w * bpp;
+                for (var i = 0; i < h; i++)
+                {
+                    var lineOffset = i * bytesPerRow;
+                    buffer[lineOffset..(lineOffset + lineLength)].CopyTo(fBuffer[(offset + lineOffset)..]);
+                }
+            }
+            
 
             // overwrite alpha
             for (var i = 3; i < buffer.Length; i += 4)
