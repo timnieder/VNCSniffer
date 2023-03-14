@@ -1,4 +1,5 @@
 ﻿using PacketDotNet;
+using System;
 using System.Net;
 using VNCSniffer.Core.Messages;
 using VNCSniffer.Core.Messages.Initialization;
@@ -119,7 +120,7 @@ namespace VNCSniffer.Core
             var offset = y * bytesPerRow + x * bpp;
             var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
-            buffer.CopyTo(fBuffer);
+            buffer.CopyTo(fBuffer); //TODO: what if we get a smaller rect, copy per line
             // TODO: check if big endian
 
             // overwrite alpha
@@ -134,9 +135,33 @@ namespace VNCSniffer.Core
             //TODO: drawpixel/setpixel
         }
 
-        public void DrawSolidRect(byte[] clr, ushort x, ushort y, ushort w, ushort h)
+        public unsafe void DrawSolidRect(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort w, ushort h)
         {
-            //TODO: drawsolidrect
+            if (framebuffer == null)
+                return;
+
+            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            bpp /= 8;
+            if (Width == null) //TODO: handle this case
+                return;
+            var bytesPerRow = Width.Value * bpp;
+            var offset = y * bytesPerRow + x * bpp;
+            var fBuffer = Framebuffer;
+            //TODO: framebuffer size checks, resize if too small
+            //TODO: check if big endian
+            // insert clr line by line //TODO: can we optimize this?
+            for (var i = 0; i < h; i++)
+            {
+                var lineOffset = offset + i * bytesPerRow;
+                for (var j = 0; j < w; j++)
+                {
+                    var off = lineOffset + j * bpp;
+                    fBuffer[off] = clr[0]; // r
+                    fBuffer[off + 1] = clr[1]; // g
+                    fBuffer[off + 2] = clr[2]; // b
+                    fBuffer[off + 3] = 0xFF; // alpha
+                }
+            }
         }
     }
 
@@ -146,7 +171,7 @@ namespace VNCSniffer.Core
         public TcpPacket TCP; //TODO: only copy what we need like source/dest
         public UnknownMessageEvent(TcpPacket tcp, byte[] data)
         {
-            tcp = tcp;
+            TCP = tcp;
             Data = data;
         }
     }
