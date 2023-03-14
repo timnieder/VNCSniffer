@@ -23,11 +23,12 @@ namespace VNCSniffer.Core.Encodings
         }
         public ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index)
         {
-            return Decode(e.Data, e.Connection.Format, ev, ref index, 16);
+            return Decode(e.Data, e.Connection, ev, ref index, 16);
         }
 
-        public static ProcessStatus Decode(ReadOnlySpan<byte> data, PixelFormat? format, FramebufferUpdateEvent ev, ref int index, byte tileSize)
+        public static ProcessStatus Decode(ReadOnlySpan<byte> data, Connection connection, FramebufferUpdateEvent ev, ref int index, byte tileSize)
         {
+            var format = connection.Format;
             var bpp = format != null ? format.BitsPerPixel : 32;
             bpp /= 8;
             // check if cpixels are smaller
@@ -56,7 +57,7 @@ namespace VNCSniffer.Core.Encodings
             for (var i = 0; i < numTilesRow; i++, tileY += tileSize)
             {
                 // the last row can be smaller than 16px high
-                var tileH = i == numTilesRow - 1 ? ev.h % tileSize : tileSize;
+                var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % tileSize) : tileSize;
                 for (var j = 0; j < numTilesColumn; j++, tileX += tileSize)
                 {
                     // may not have enough bytes for the header
@@ -64,7 +65,7 @@ namespace VNCSniffer.Core.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     // last tile in a row can be smaller than 16px wide
-                    var tileW = j == numTilesColumn - 1 ? ev.w % tileSize : tileSize;
+                    var tileW = j == numTilesColumn - 1 ? (ushort)(ev.w % tileSize) : tileSize;
 
                     var subencoding = data[index];
                     index++;
@@ -76,7 +77,8 @@ namespace VNCSniffer.Core.Encodings
                                 if (data.Length < index + length)
                                     return ProcessStatus.NeedsMoreBytes;
 
-                                //TODO: parse bitmap
+                                // parse bitmap
+                                connection.DrawRegion(data, tileX, tileY);
                                 index += length;
                                 break;
                             }
@@ -86,7 +88,9 @@ namespace VNCSniffer.Core.Encodings
                                     return ProcessStatus.NeedsMoreBytes;
 
                                 //TODO: parse color
-                                var clr = data[index];
+                                var clr = data[index..(index + bpp)];
+                                // draw tile
+                                connection.DrawSolidRect(clr, tileX, tileY, tileW, tileH);
                                 index += bpp;
                                 break;
                             }

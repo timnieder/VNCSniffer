@@ -35,7 +35,7 @@ namespace VNCSniffer.Core.Encodings
             for (var i = 0; i < numTilesRow; i++, tileY += 16)
             {
                 // the last row can be smaller than 16px high
-                var tileH = i == numTilesRow - 1 ? ev.h % 16 : 16;
+                var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % 16) : (ushort)16;
                 for (var j = 0; j < numTilesColumn; j++, tileX += 16)
                 {
                     // may not have enough bytes for the header
@@ -43,7 +43,7 @@ namespace VNCSniffer.Core.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     // last tile in a row can be smaller than 16px wide
-                    var tileW = j == numTilesColumn - 1 ? ev.w % 16 : 16;
+                    var tileW = j == numTilesColumn - 1 ? (ushort)(ev.w % 16) : (ushort)16;
 
                     var header = (SubencodingMask)e.Data[index];
                     index += 1;
@@ -54,7 +54,8 @@ namespace VNCSniffer.Core.Encodings
                         if (e.Data.Length < index + length)
                             return ProcessStatus.NeedsMoreBytes;
 
-                        //TODO: parse bitmap
+                        // parse bitmap
+                        e.Connection.DrawRegion(e.Data, tileX, tileY);
                         index += length;
                         continue; // other flags are ignored
                     }
@@ -66,7 +67,7 @@ namespace VNCSniffer.Core.Encodings
                             return ProcessStatus.NeedsMoreBytes;
 
                         //TODO: parse bg color
-                        bgColor = e.Data[index..];
+                        bgColor = e.Data[index..(index + bpp)];
                         index += bpp;
                     }
 
@@ -77,7 +78,7 @@ namespace VNCSniffer.Core.Encodings
                             return ProcessStatus.NeedsMoreBytes;
 
                         //TODO: parse fg color
-                        fgColor = e.Data[index..];
+                        fgColor = e.Data[index..(index + bpp)];
                         index += bpp;
                     }
 
@@ -106,25 +107,29 @@ namespace VNCSniffer.Core.Encodings
                     if (e.Data.Length < index + (numberOfSubrects * subrectLength))
                         return ProcessStatus.NeedsMoreBytes;
 
-                    //TODO: draw bg
+                    // draw bg
+                    e.Connection.DrawSolidRect(bgColor, tileX, tileY, tileW, tileH);
                     for (var k = 0; k < numberOfSubrects; k++)
                     {
                         var clr = fgColor;
                         if (subrectsColored)
                         {
                             //TODO: read pixel;
-                            clr = e.Data[index..];
+                            clr = e.Data[index..(index + bpp)];
                             index += bpp;
                         }
                         // xy and wh are merged x and y/w and h values.
                         // The upper 4 bits are x/w and the lower ones being y/h respectively
                         var xy = e.Data[index];
-                        var x = xy >> 4;
-                        var y = xy & 0b00001111;
+                        var x = (ushort)(xy >> 4);
+                        var y = (ushort)(xy & 0b00001111);
                         var wh = e.Data[(index + 1)];
-                        var w = wh >> 4;
-                        var h = wh & 0b00001111;
-                        //TODO: draw subrect
+                        var w = (ushort)(wh >> 4);
+                        var h = (ushort)(wh & 0b00001111);
+                        // draw subrect
+                        var absoluteX = (ushort)(tileX + x);
+                        var absoluteY = (ushort)(tileY + y);
+                        e.Connection.DrawSolidRect(clr, absoluteX, absoluteY, w, h);
                         index += 2;
                     }
                 }

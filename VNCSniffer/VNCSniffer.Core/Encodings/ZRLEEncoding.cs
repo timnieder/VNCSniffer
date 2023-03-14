@@ -24,7 +24,7 @@ namespace VNCSniffer.Core.Encodings
             index += dataLength;
 
             var zLibDataIndex = 0; // as we're working on a new buffer we need to have a new index
-            return TRLEEncoding.Decode(data, e.Connection.Format, ev, ref zLibDataIndex, 64);
+            return TRLEEncoding.Decode(data, e.Connection, ev, ref zLibDataIndex, 64);
         }
     }
 }
