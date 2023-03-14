@@ -11,14 +11,16 @@ namespace VNCSniffer.GUI
     public class Sniffer
     {
         public static MainWindow MainWindow;
-        public static unsafe void Start()
+        public static unsafe void Start(MainWindow window)
         {
-            //string path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\PythonServerTightClient.pcapng";
             string path = null;
-            //string path = "C:\\Users\\Exp\\Desktop\\1.pcapng";
+            //path = "C:\\Users\\Exp\\Desktop\\1.pcapng";
+            //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\Raw.pcapng";
+            //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\RRE.pcapng";
+            path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\Hextile.pcapng";
+            //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\TRLE.pcapng";
 
-            var lifetime = (IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
-            MainWindow = (MainWindow)lifetime.MainWindow;
+            MainWindow = window;
 
             ICaptureDevice device;
             if (path != null)

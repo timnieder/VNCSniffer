@@ -173,23 +173,29 @@ namespace VNCSniffer.Core
             if (w == Width)
             {
                 buffer.CopyTo(fBuffer[offset..]);
+                // overwrite alpha
+                for (var i = 3; i < buffer.Length; i += 4)
+                {
+                    fBuffer[offset + i] = 0xFF;
+                }
             }
             else // if we've got a smaller rect, we need to copy per line
             {
                 var lineLength = w * bpp;
                 for (var i = 0; i < h; i++)
                 {
-                    var lineOffset = i * bytesPerRow;
-                    buffer[lineOffset..(lineOffset + lineLength)].CopyTo(fBuffer[(offset + lineOffset)..]);
+                    var fbLineOffset = i * bytesPerRow;
+                    var inLineOffset = i * lineLength;
+                    buffer[inLineOffset..(inLineOffset + lineLength)].CopyTo(fBuffer[(offset + fbLineOffset)..]);
+                    // overwrite alpha
+                    for (var j = 3; j < lineLength; j += 4)
+                    {
+                        fBuffer[offset + fbLineOffset + j] = 0xFF;
+                    }
                 }
             }
-            
 
-            // overwrite alpha
-            for (var i = 3; i < buffer.Length; i += 4)
-            {
-                fBuffer[offset + i] = 0xFF;
-            }
+            //TODO: merge alpha overwrite?
         }
 
         /// <summary>

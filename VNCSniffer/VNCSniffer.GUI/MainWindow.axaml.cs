@@ -29,7 +29,7 @@ namespace VNCSniffer.GUI
 #endif
             Image = this.FindControl<Image>("framebuffer");
 
-            Sniffer.Start();
+            Sniffer.Start(this);
         }
 
         public unsafe void ResizeFramebuffer(Connection con, int width, int height)
