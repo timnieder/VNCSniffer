@@ -18,7 +18,8 @@ namespace VNCSniffer.GUI
             //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\Raw.pcapng";
             //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\RRE.pcapng";
             //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\Hextile.pcapng";
-            path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\TRLE.pcapng";
+            //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\TRLE.pcapng";
+            //path = "E:\\D\\Visual Studio\\Uni\\Masterarbeit\\Captures\\Encodings\\ZRLE.pcapng";
 
             MainWindow = window;
 

@@ -156,7 +156,7 @@ namespace VNCSniffer.Core
         /// <param name="y"></param>
         /// <param name="w"></param>
         /// <param name="h"></param>
-        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h)
+        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h, int? forceBpp = null)
         {
             if (framebuffer == null)
                 return;
@@ -170,6 +170,25 @@ namespace VNCSniffer.Core
             var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
             // TODO: check if big endian
+            if (forceBpp != null && forceBpp.Value != bpp) // if we've got a different bpp in the buffer we need to copy per pixel
+            {
+                //TODO: make this code more sane
+                for (var i = 0; i < h; i++)
+                {
+                    var lineOffset = offset + i * bytesPerRow;
+                    var bLineOffset = i * w * forceBpp.Value;
+                    for (var j = 0; j < w; j++)
+                    {
+                        var off = lineOffset + j * bpp;
+                        var bOff = bLineOffset + j * forceBpp.Value;
+                        fBuffer[off] = buffer[bOff]; // b
+                        fBuffer[off + 1] = buffer[bOff + 1]; // g
+                        fBuffer[off + 2] = buffer[bOff + 2]; // r
+                        fBuffer[off + 3] = 0xFF; // alpha
+                    }
+                }
+                return;
+            }
             if (w == Width)
             {
                 buffer.CopyTo(fBuffer[offset..]);
