@@ -220,9 +220,9 @@ namespace VNCSniffer.Core
 
             for (var i = 0; i < length; i++)
             {
-                fBuffer[offset] = clr[0]; // r
+                fBuffer[offset] = clr[0]; // b
                 fBuffer[offset + 1] = clr[1]; // g
-                fBuffer[offset + 2] = clr[2]; // b
+                fBuffer[offset + 2] = clr[2]; // r
                 fBuffer[offset + 3] = 0xFF; // alpha
             }
         }
@@ -256,9 +256,9 @@ namespace VNCSniffer.Core
                 for (var j = 0; j < w; j++)
                 {
                     var off = lineOffset + j * bpp;
-                    fBuffer[off] = clr[0]; // r
+                    fBuffer[off] = clr[0]; // b
                     fBuffer[off + 1] = clr[1]; // g
-                    fBuffer[off + 2] = clr[2]; // b
+                    fBuffer[off + 2] = clr[2]; // r
                     fBuffer[off + 3] = 0xFF; // alpha
                 }
             }

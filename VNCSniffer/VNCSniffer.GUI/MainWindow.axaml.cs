@@ -35,7 +35,7 @@ namespace VNCSniffer.GUI
         public unsafe void ResizeFramebuffer(Connection con, int width, int height)
         {
             //TODO: rather resize than destroy it?
-            Bitmap = new(new(width, height), new Vector(96, 96), Avalonia.Platform.PixelFormat.Rgba8888, Avalonia.Platform.AlphaFormat.Opaque);
+            Bitmap = new(new(width, height), new Vector(96, 96), Avalonia.Platform.PixelFormat.Bgra8888, Avalonia.Platform.AlphaFormat.Opaque);
             using var bmp = Bitmap.Lock(); //TODO: need using?
             unsafe
             {

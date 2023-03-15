@@ -2,11 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="500"
         x:Class="VNCSniffer.GUI.MainWindow"
         Title="VNCSniffer.GUI">
-	<Grid RowDefinitions="20,*">
-		<Label Grid.Row="0">Text</Label>
-		<Image Grid.Row="1" Name="framebuffer" Stretch="None"/>
+	<Grid RowDefinitions="*">
+		<Image Grid.Row="0" Name="framebuffer" Stretch="Uniform"/>
 	</Grid>
 </Window>
