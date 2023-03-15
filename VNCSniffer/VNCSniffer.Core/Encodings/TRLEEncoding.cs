@@ -147,8 +147,9 @@ namespace VNCSniffer.Core.Encodings
                                     while (toWrite > 0) // draw until no more left to write
                                     {
                                         var cur = toWrite;
-                                        if (toWrite > tileW) // we can only draw 16 at a time
-                                            cur = tileW;
+                                        var leftInRow = tileW - curXOffset;
+                                        if (toWrite > leftInRow) // can only draw so many pixels in this row, max 16
+                                            cur = leftInRow;
                                         connection.DrawPixel(pixelValue, (ushort)(tileX + curXOffset), (ushort)(tileY + curYOffset), (ushort)cur);
                                         toWrite -= cur;
                                         // offset the cursor by the length we've written
@@ -240,8 +241,9 @@ namespace VNCSniffer.Core.Encodings
                     while (toWrite > 0) // draw until no more left to write
                     {
                         var cur = toWrite;
-                        if (toWrite > tileW) // we can only draw 16 at a time
-                            cur = tileW;
+                        var leftInRow = tileW - curXOffset;
+                        if (toWrite > leftInRow) // can only draw so many pixels in this row, max 16
+                            cur = leftInRow;
                         connection.DrawPixel(clr, (ushort)(tileX + curXOffset), (ushort)(tileY + curYOffset), (ushort)cur);
                         toWrite -= cur;
                         // offset the cursor by the length we've written
