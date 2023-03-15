@@ -77,7 +77,7 @@ namespace VNCSniffer.Core.Encodings
                                 if (data.Length < index + length)
                                     return ProcessStatus.NeedsMoreBytes;
 
-                                // parse bitmap
+                                // parse bitmap //TODO: fix drawing using cpixels
                                 connection.DrawRegion(data[index..(index + length)], tileX, tileY, tileW, tileH);
                                 index += length;
                                 break;

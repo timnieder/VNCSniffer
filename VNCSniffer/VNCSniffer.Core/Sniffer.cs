@@ -1,6 +1,7 @@
 ﻿using PacketDotNet;
 using PacketDotNet.Connections;
 using SharpPcap;
+using SharpPcap.LibPcap;
 using System.Diagnostics;
 using System.Net;
 using VNCSniffer.Core.Messages;
@@ -33,7 +34,13 @@ namespace VNCSniffer.Core
 
             TCPConnectionManager.OnConnectionFound += TcpConnectionManager_OnConnectionFound;
 
-            device.Open(DeviceModes.Promiscuous); //TODO: read timeout ms
+            var config = new DeviceConfiguration()
+            {
+                Mode = DeviceModes.Promiscuous,
+                ReadTimeout = 1000, //TODO: read timeout ms
+                Snaplen = 65539, //TODO: set snaplen even higher? this is the min size for loopback fragmented packets
+            };
+            device.Open(config);
             var filter = $"tcp and (port {ports[0]}";
             foreach (var port in ports)
             {
