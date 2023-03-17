@@ -1,7 +1,4 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using SharpPcap;
 using System;
@@ -101,7 +98,7 @@ namespace VNCSniffer.GUI
             tab.ResizeFramebuffer(con, width, height);
         }
 
-        public void OnInterfaceSelected(ICaptureDevice device)
+        public void OnDeviceSelected(ICaptureDevice device)
         {
             this.InterfaceTab.IsVisible = false;
             SelectedTab = 0;

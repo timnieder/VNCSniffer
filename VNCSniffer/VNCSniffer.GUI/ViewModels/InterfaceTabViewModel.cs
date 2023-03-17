@@ -1,14 +1,9 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Media;
 using ReactiveUI;
 using SharpPcap;
-using System;
-using System.Collections.Generic;
+using SharpPcap.LibPcap;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace VNCSniffer.GUI.ViewModels
 {
@@ -63,7 +58,37 @@ namespace VNCSniffer.GUI.ViewModels
 
         public void OnInterfaceSelected(Interface iface)
         {
-            MainWindow.OnInterfaceSelected(iface.Device);
+            MainWindow.OnDeviceSelected(iface.Device);
+        }
+
+        public async void OnLoadFromFileButtonClick()
+        {
+            var dialog = new OpenFileDialog()
+            {
+                AllowMultiple = false,
+                Filters = new()
+                {
+                    new()
+                    {
+                        Name = "PCAP Files",
+                        Extensions = new(){ "pcap", "pcapng" }
+                    },
+                    new()
+                    {
+                        Name = "All Files",
+                        Extensions = new(){ "*" }
+                    }
+                },
+            };
+            var files = await dialog.ShowAsync(MainWindow);
+            if (files == null || files.Length == 0) // Nothing given
+                return;
+
+            var filePath = files[0];
+            if (!File.Exists(filePath))
+                return;
+
+            MainWindow.OnDeviceSelected(new CaptureFileReaderDevice(filePath));
         }
     }
 }
