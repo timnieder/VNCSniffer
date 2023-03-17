@@ -123,6 +123,7 @@ namespace VNCSniffer.Core
             if (framebuffer == null)
                 return;
 
+            //TODO: try to guess bpp
             var bpp = Format != null ? Format.BitsPerPixel : 32;
             bpp /= 8;
             if (Width == null) //TODO: handle this case
@@ -132,10 +133,15 @@ namespace VNCSniffer.Core
             var destOffset = destY * bytesPerRow + destX * bpp;
             var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
+            var dataLength = (w * h * bpp);
+            if (fBuffer.Length < (srcOffset + dataLength))
+                return;
+            if (fBuffer.Length < (destOffset + dataLength))
+                return;
+
             if (w == Width)
             {
-                var length = w * h * bpp;
-                fBuffer[srcOffset..(srcOffset + length)].CopyTo(fBuffer[destOffset..]);
+                fBuffer[srcOffset..(srcOffset + dataLength)].CopyTo(fBuffer[destOffset..]);
             }
             else // if we've got a smaller rect, we need to copy per line
             {
