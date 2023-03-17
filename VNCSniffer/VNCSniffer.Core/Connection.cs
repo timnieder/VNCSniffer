@@ -1,5 +1,4 @@
 ﻿using PacketDotNet;
-using System;
 using System.Net;
 using VNCSniffer.Core.Messages;
 using VNCSniffer.Core.Messages.Initialization;
@@ -25,12 +24,14 @@ namespace VNCSniffer.Core
         public ushort? Width;
         public ushort? Height;
         public PixelFormat? Format;
+        public PixelFormat PixelFormat => Format ?? PixelFormat.Default;
 
         public byte[]? Challenge;
         public byte[]? ChallengeResponse;
 
         private unsafe byte* framebuffer;
         private int framebufferLength;
+        public PixelFormat FramebufferPixelFormat;
         public unsafe Span<byte> Framebuffer => new(framebuffer, framebufferLength);
 
         // Events
@@ -102,10 +103,11 @@ namespace VNCSniffer.Core
                 Buffer2 = buffer;
         }
 
-        public unsafe void SetFramebuffer(byte* framebuffer, int length)
+        public unsafe void SetFramebuffer(byte* framebuffer, int length, PixelFormat fbFormat)
         {
             this.framebuffer = framebuffer;
             this.framebufferLength = length;
+            this.FramebufferPixelFormat = fbFormat;
         }
 
         // Drawing
@@ -124,7 +126,8 @@ namespace VNCSniffer.Core
                 return;
 
             //TODO: try to guess bpp
-            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            var format = PixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             if (Width == null) //TODO: handle this case
                 return;
@@ -162,42 +165,49 @@ namespace VNCSniffer.Core
         /// <param name="y"></param>
         /// <param name="w"></param>
         /// <param name="h"></param>
-        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h, int? forceBpp = null)
+        public unsafe void DrawRegion(ReadOnlySpan<byte> buffer, ushort x, ushort y, ushort w, ushort h, byte? forceBpp = null)
         {
             if (framebuffer == null)
                 return;
 
-            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            var format = PixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
+            if (forceBpp != null)
+                bpp = forceBpp.Value;
             if (Width == null) //TODO: handle this case
                 return;
-            var bytesPerRow = Width.Value * bpp;
-            var offset = y * bytesPerRow + x * bpp;
+
+            var targetBpp = FramebufferPixelFormat.BitsPerPixel / 8;
+            var bytesPerRow = Width.Value * targetBpp;
+            var offset = y * bytesPerRow + x * targetBpp;
             var fBuffer = Framebuffer;
             //TODO: framebuffer size checks, resize if too small
             // TODO: check if big endian
-            if (forceBpp != null && forceBpp.Value != bpp) // if we've got a different bpp in the buffer we need to copy per pixel
+            if (bpp != targetBpp) // if we've got a different bpp in the buffer we need to copy per pixel
             {
                 //TODO: make this code more sane
                 for (var i = 0; i < h; i++)
                 {
                     var lineOffset = offset + i * bytesPerRow;
-                    var bLineOffset = i * w * forceBpp.Value;
+                    var bLineOffset = i * w * bpp;
                     for (var j = 0; j < w; j++)
                     {
-                        var off = lineOffset + j * bpp;
-                        var bOff = bLineOffset + j * forceBpp.Value;
+                        var off = lineOffset + j * targetBpp;
+                        var bOff = bLineOffset + j * bpp;
                         // Check if in buffer has enough bytes
-                        if (buffer.Length < (bOff + 3))
+                        if (buffer.Length < (bOff + bpp))
                             return;
 
                         // Check if framebuffer has enough space
-                        if (fBuffer.Length < (off + 3))
+                        if (fBuffer.Length < (off + targetBpp))
                             return;
 
-                        fBuffer[off] = buffer[bOff]; // b
-                        fBuffer[off + 1] = buffer[bOff + 1]; // g
-                        fBuffer[off + 2] = buffer[bOff + 2]; // r
+                        var clr = new Color(buffer[bOff..], format, bpp, FramebufferPixelFormat);
+                        //TODO: adjust according to fbpixelformat
+                        fBuffer[off] = clr.B; // b
+                        fBuffer[off + 1] = clr.G; // g
+                        fBuffer[off + 2] = clr.R; // r
                         fBuffer[off + 3] = 0xFF; // alpha
                     }
                 }
@@ -210,8 +220,8 @@ namespace VNCSniffer.Core
                     return;
 
                 buffer.CopyTo(fBuffer[offset..]);
-                // overwrite alpha
-                for (var i = 3; i < buffer.Length; i += 4)
+                // overwrite alpha //TODO: adjust according to fbpixelformat
+                for (var i = (targetBpp - 1); i < buffer.Length; i += targetBpp)
                 {
                     fBuffer[offset + i] = 0xFF;
                 }
@@ -232,8 +242,8 @@ namespace VNCSniffer.Core
                         return;
 
                     buffer[inLineOffset..(inLineOffset + lineLength)].CopyTo(fBuffer[(offset + fbLineOffset)..]);
-                    // overwrite alpha
-                    for (var j = 3; j < lineLength; j += 4)
+                    // overwrite alpha //TODO: adjust according to fbpixelformat
+                    for (var j = (targetBpp - 1); j < lineLength; j += targetBpp)
                     {
                         fBuffer[offset + fbLineOffset + j] = 0xFF;
                     }
@@ -250,12 +260,13 @@ namespace VNCSniffer.Core
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <param name="length"></param>
-        public unsafe void DrawPixel(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort length = 1)
+        public unsafe void DrawPixel(Color clr, ushort x, ushort y, ushort length = 1)
         {
             if (framebuffer == null)
                 return;
 
-            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            var format = FramebufferPixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             if (Width == null) //TODO: handle this case
                 return;
@@ -267,12 +278,13 @@ namespace VNCSniffer.Core
             {
                 var off = offset + i * bpp;
                 // Check if framebuffer has enough space
-                if (fBuffer.Length < (off + 3))
+                if (fBuffer.Length < (off + bpp))
                     return;
 
-                fBuffer[off] = clr[0]; // b
-                fBuffer[off + 1] = clr[1]; // g
-                fBuffer[off + 2] = clr[2]; // r
+                //TODO: adjust according to fbpixelformat
+                fBuffer[off] = clr.B; // b
+                fBuffer[off + 1] = clr.G; // g
+                fBuffer[off + 2] = clr.R; // r
                 fBuffer[off + 3] = 0xFF; // alpha
             }
         }
@@ -285,12 +297,13 @@ namespace VNCSniffer.Core
         /// <param name="y"></param>
         /// <param name="w"></param>
         /// <param name="h"></param>
-        public unsafe void DrawSolidRect(ReadOnlySpan<byte> clr, ushort x, ushort y, ushort w, ushort h)
+        public unsafe void DrawSolidRect(Color clr, ushort x, ushort y, ushort w, ushort h)
         {
             if (framebuffer == null)
                 return;
 
-            var bpp = Format != null ? Format.BitsPerPixel : 32;
+            var format = FramebufferPixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             if (Width == null) //TODO: handle this case
                 return;
@@ -307,12 +320,13 @@ namespace VNCSniffer.Core
                 {
                     var off = lineOffset + j * bpp;
                     // Check if framebuffer has enough space
-                    if (fBuffer.Length < (off + 3))
+                    if (fBuffer.Length < (off + bpp))
                         return;
 
-                    fBuffer[off] = clr[0]; // b
-                    fBuffer[off + 1] = clr[1]; // g
-                    fBuffer[off + 2] = clr[2]; // r
+                    //TODO: adjust according to fbpixelformat
+                    fBuffer[off] = clr.B; // b
+                    fBuffer[off + 1] = clr.G; // g
+                    fBuffer[off + 2] = clr.R; // r
                     fBuffer[off + 3] = 0xFF; // alpha
                 }
             }

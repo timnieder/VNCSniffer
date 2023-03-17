@@ -7,7 +7,8 @@ namespace VNCSniffer.Core.Encodings
     {
         public ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index)
         {
-            var bpp = e.Connection.Format != null ? e.Connection.Format.BitsPerPixel : 32;
+            var format = e.Connection.PixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             var length = ev.w * ev.h * bpp;
             if (e.Data.Length < index + length)

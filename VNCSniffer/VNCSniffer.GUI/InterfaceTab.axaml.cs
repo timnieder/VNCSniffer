@@ -6,11 +6,11 @@ namespace VNCSniffer.GUI
 {
     public partial class InterfaceTab : UserControl
     {
-        public InterfaceTab(InterfaceTabViewModel vm)
+        public InterfaceTab(InterfaceTabViewModel vm) : this()
         {
-            InitializeComponent();
             DataContext = vm;
         }
+
         public InterfaceTab()
         {
             InitializeComponent();

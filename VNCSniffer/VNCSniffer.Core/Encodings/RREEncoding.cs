@@ -8,14 +8,15 @@ namespace VNCSniffer.Core.Encodings
     {
         public ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index)
         {
-            var bpp = e.Connection.Format != null ? e.Connection.Format.BitsPerPixel : 32;
+            var format = e.Connection.PixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             var headerLength = 4 + bpp;
             if (e.Data.Length < index + headerLength)
                 return ProcessStatus.NeedsMoreBytes;
 
             var numberOfSubrectangles = BinaryPrimitives.ReadInt32BigEndian(e.Data[index..]);
-            var bgColor = e.Data[(index + 4)..(index + headerLength)]; //TODO: parse pixel
+            var bgColor = new Color(e.Data[(index + 4)..(index + headerLength)], format, bpp, e.Connection.FramebufferPixelFormat);
             // draw bg
             e.Connection.DrawSolidRect(bgColor, ev.x, ev.y, ev.w, ev.h);
             index += headerLength;
@@ -25,7 +26,8 @@ namespace VNCSniffer.Core.Encodings
                 if (e.Data.Length < index + length)
                     return ProcessStatus.NeedsMoreBytes;
 
-                var subrectClr = e.Data[index..(index + bpp)]; //TODO: parse pixel
+                // parse color
+                var subrectClr = new Color(e.Data[index..(index + bpp)], format, bpp, e.Connection.FramebufferPixelFormat);
                 var x = BinaryPrimitives.ReadUInt16BigEndian(e.Data[(index + bpp)..]);
                 var y = BinaryPrimitives.ReadUInt16BigEndian(e.Data[(index + bpp + 2)..]);
                 var w = BinaryPrimitives.ReadUInt16BigEndian(e.Data[(index + bpp + 4)..]);

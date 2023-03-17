@@ -13,9 +13,8 @@ namespace VNCSniffer.GUI
 {
     public partial class ConnectionTab : UserControl
     {
-        public ConnectionTab(ConnectionTabViewModel vm)
+        public ConnectionTab(ConnectionTabViewModel vm) : this()
         {
-            InitializeComponent();
             DataContext = vm;
         }
 

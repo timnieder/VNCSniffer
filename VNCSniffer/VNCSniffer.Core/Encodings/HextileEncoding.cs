@@ -17,7 +17,8 @@ namespace VNCSniffer.Core.Encodings
 
         public ProcessStatus Parse(MessageEvent e, FramebufferUpdateEvent ev, ref int index)
         {
-            var bpp = e.Connection.Format != null ? e.Connection.Format.BitsPerPixel : 32;
+            var format = e.Connection.PixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             // rectangle is tiled into 16px*16px, so math.ceil(w/16) tiles per row and math.ceil(h/16) tiles per column
             var numTilesColumn = (int)Math.Ceiling(ev.w / 16f);
@@ -27,9 +28,8 @@ namespace VNCSniffer.Core.Encodings
                 return ProcessStatus.NeedsMoreBytes;
             //TODO: remove this prev check as its probably not needed?
 
-            //TODO: make this into Pixel/color class?
-            ReadOnlySpan<byte> bgColor = null;
-            ReadOnlySpan<byte> fgColor = null;
+            Color? bgColor = null;
+            Color? fgColor = null;
             var tileX = ev.x;
             var tileY = ev.y;
             for (var i = 0; i < numTilesRow; i++, tileY += 16)
@@ -66,8 +66,8 @@ namespace VNCSniffer.Core.Encodings
                         if (e.Data.Length < index + bpp)
                             return ProcessStatus.NeedsMoreBytes;
 
-                        //TODO: parse bg color
-                        bgColor = e.Data[index..(index + bpp)];
+                        // parse bg color
+                        bgColor = new Color(e.Data[index..(index + bpp)], format, bpp, e.Connection.FramebufferPixelFormat);
                         index += bpp;
                     }
 
@@ -77,8 +77,8 @@ namespace VNCSniffer.Core.Encodings
                         if (e.Data.Length < index + bpp)
                             return ProcessStatus.NeedsMoreBytes;
 
-                        //TODO: parse fg color
-                        fgColor = e.Data[index..(index + bpp)];
+                        // parse fg color
+                        fgColor = new Color(e.Data[index..(index + bpp)], format, bpp, e.Connection.FramebufferPixelFormat);
                         index += bpp;
                     }
 
@@ -108,14 +108,14 @@ namespace VNCSniffer.Core.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     // draw bg
-                    e.Connection.DrawSolidRect(bgColor, tileX, tileY, tileW, tileH);
+                    e.Connection.DrawSolidRect(bgColor.Value, tileX, tileY, tileW, tileH);
                     for (var k = 0; k < numberOfSubrects; k++)
                     {
                         var clr = fgColor;
                         if (subrectsColored)
                         {
-                            //TODO: read pixel;
-                            clr = e.Data[index..(index + bpp)];
+                            // Parse subrect color
+                            clr = new Color(e.Data[index..(index + bpp)], format, bpp, e.Connection.FramebufferPixelFormat);
                             index += bpp;
                         }
                         //TODO: bigendian check?
@@ -131,7 +131,7 @@ namespace VNCSniffer.Core.Encodings
                         // draw subrect
                         var absoluteX = (ushort)(tileX + x);
                         var absoluteY = (ushort)(tileY + y);
-                        e.Connection.DrawSolidRect(clr, absoluteX, absoluteY, w, h);
+                        e.Connection.DrawSolidRect(clr.Value, absoluteX, absoluteY, w, h);
                         index += 2;
                     }
                 }

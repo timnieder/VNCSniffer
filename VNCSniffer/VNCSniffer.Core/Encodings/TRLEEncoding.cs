@@ -28,12 +28,11 @@ namespace VNCSniffer.Core.Encodings
 
         public static ProcessStatus Decode(ReadOnlySpan<byte> data, Connection connection, FramebufferUpdateEvent ev, ref int index, byte tileSize)
         {
-            var format = connection.Format;
-            var bpp = format != null ? format.BitsPerPixel : 32;
+            var format = connection.PixelFormat;
+            var bpp = format.BitsPerPixel;
             bpp /= 8;
             // check if cpixels are smaller
-            if (format != null &&
-                format.TrueColor &&
+            if (format.TrueColor &&
                 format.BitsPerPixel == 32)
             {
                 // Check if we can fit all color bits into 3 bytes
@@ -48,11 +47,10 @@ namespace VNCSniffer.Core.Encodings
             // rectangle is tiled into 16px*16px, so math.ceil(w/16) tiles per row and math.ceil(h/16) tiles per column
             var numTilesColumn = (int)Math.Ceiling(ev.w / (float)tileSize);
             var numTilesRow = (int)Math.Ceiling(ev.h / (float)tileSize);
-            var numTiles = numTilesColumn * numTilesRow;
             var tileX = ev.x;
             var tileY = ev.y;
             //TODO: make into pixel array
-            ReadOnlySpan<byte> palette = null;
+            List<Color> palette = null;
             //TODO: use different palettes for palette and paletteRLE?
             for (var i = 0; i < numTilesRow; i++, tileY += tileSize)
             {
@@ -88,7 +86,7 @@ namespace VNCSniffer.Core.Encodings
                                     return ProcessStatus.NeedsMoreBytes;
 
                                 //TODO: parse color
-                                var clr = data[index..(index + bpp)];
+                                var clr = new Color(data[index..(index + bpp)], format, bpp, connection.FramebufferPixelFormat);
                                 // draw tile
                                 connection.DrawSolidRect(clr, tileX, tileY, tileW, tileH);
                                 index += bpp;
@@ -103,7 +101,7 @@ namespace VNCSniffer.Core.Encodings
                                 if (data.Length < index + paletteSizeInBytes + packedPixelsLength)
                                     return ProcessStatus.NeedsMoreBytes;
 
-                                palette = data[(index)..(index + paletteSizeInBytes)];
+                                palette = Color.ParseList(data[(index)..(index + paletteSizeInBytes)], format, bpp, connection.FramebufferPixelFormat);
                                 index += paletteSizeInBytes;
                                 HandlePackedPixels(data, ref index, connection, tileX, tileY, tileH, tileW, palette, paletteSize, bpp, packedPixelsLength);
                                 break;
@@ -111,7 +109,9 @@ namespace VNCSniffer.Core.Encodings
                         case SubencodingType.ReusePalette:
                             {
                                 // read using palette
-                                var paletteSize = (byte)(palette.Length / bpp);
+                                if (palette == null)
+                                    throw new Exception("Palette used before setting."); //TODO: make fail safe
+                                var paletteSize = (byte)palette.Count;
                                 var packedPixelsLength = GetPacketPixelsSize(paletteSize, tileW, tileH);
                                 if (data.Length < index + packedPixelsLength)
                                     return ProcessStatus.NeedsMoreBytes;
@@ -130,7 +130,7 @@ namespace VNCSniffer.Core.Encodings
                                     if (data.Length < index + bpp + 1) // atleast one 
                                         return ProcessStatus.NeedsMoreBytes;
 
-                                    var pixelValue = data[index..(index + bpp)];
+                                    var pixelValue = new Color(data[index..(index + bpp)], format, bpp, connection.FramebufferPixelFormat);
                                     index += bpp;
                                     var length = 0;
                                     while (data[index] == 255)
@@ -180,7 +180,7 @@ namespace VNCSniffer.Core.Encodings
                                 if (data.Length < index + paletteSizeInBytes)
                                     return ProcessStatus.NeedsMoreBytes;
 
-                                palette = data[index..(index + paletteSizeInBytes)];
+                                palette = Color.ParseList(data[index..(index + paletteSizeInBytes)], format, bpp, connection.FramebufferPixelFormat);
                                 index += paletteSizeInBytes;
                                 // do paletteRLE
                                 var handled = HandlePaletteRLE(data, ref index, connection, tileX, tileY, tileH, tileW, palette, bpp);
@@ -201,7 +201,7 @@ namespace VNCSniffer.Core.Encodings
             return ProcessStatus.Handled;
         }
 
-        private static ProcessStatus HandlePaletteRLE(ReadOnlySpan<byte> data, ref int index, Connection connection, int tileX, int tileY, int tileH, int tileW, ReadOnlySpan<byte> palette, int bpp)
+        private static ProcessStatus HandlePaletteRLE(ReadOnlySpan<byte> data, ref int index, Connection connection, int tileX, int tileY, int tileH, int tileW, List<Color> palette, int bpp)
         {
             var tilePixels = tileH * tileW;
             var curXOffset = 0;
@@ -233,7 +233,7 @@ namespace VNCSniffer.Core.Encodings
                     // index is increased outside the if
                 }
                 index++;
-                ReadOnlySpan<byte> clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
+                var clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
                 if (clr != null)
                 {
                     // draw the run
@@ -244,7 +244,7 @@ namespace VNCSniffer.Core.Encodings
                         var leftInRow = tileW - curXOffset;
                         if (toWrite > leftInRow) // can only draw so many pixels in this row, max 16
                             cur = leftInRow;
-                        connection.DrawPixel(clr, (ushort)(tileX + curXOffset), (ushort)(tileY + curYOffset), (ushort)cur);
+                        connection.DrawPixel(clr.Value, (ushort)(tileX + curXOffset), (ushort)(tileY + curYOffset), (ushort)cur);
                         toWrite -= cur;
                         // offset the cursor by the length we've written
                         curXOffset += cur;
@@ -262,7 +262,7 @@ namespace VNCSniffer.Core.Encodings
         }
 
         // Parses packed pixels. Expects the data to be there
-        private static void HandlePackedPixels(ReadOnlySpan<byte> data, ref int index, Connection connection, ushort tileX, ushort tileY, int tileH, int tileW, ReadOnlySpan<byte> palette, byte paletteSize, int bpp, int packedPixelsLength)
+        private static void HandlePackedPixels(ReadOnlySpan<byte> data, ref int index, Connection connection, ushort tileX, ushort tileY, int tileH, int tileW, List<Color> palette, byte paletteSize, int bpp, int packedPixelsLength)
         {
             var packedPixelsBytes = data[(index)..(index + packedPixelsLength)];
             //TODO: make own IByteStream implementation for readonlyspans to avoid copying?
@@ -275,10 +275,10 @@ namespace VNCSniffer.Core.Encodings
                 {
                     // get palette index
                     var paletteIndex = packedPixels.Read<byte>(indexSize);
-                    ReadOnlySpan<byte> clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
+                    var clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
                     // draw pixel in framebuffer
                     if (clr != null)
-                        connection.DrawPixel(clr, (ushort)(tileX + x), (ushort)(tileY + y));
+                        connection.DrawPixel(clr.Value, (ushort)(tileX + x), (ushort)(tileY + y));
                 }
                 var bitCount = (tileW * indexSize);
                 var missingBits = (byte)(bitCount % 8);
@@ -291,12 +291,11 @@ namespace VNCSniffer.Core.Encodings
             index += packedPixelsLength;
         }
 
-        public static ReadOnlySpan<byte> GetColorFromPalette(byte index, ReadOnlySpan<byte> palette, int bpp)
+        public static Color? GetColorFromPalette(byte index, List<Color> palette, int bpp)
         {
-            var paletteOffset = (index * bpp);
-            if (paletteOffset < palette.Length)
+            if (index < palette.Count)
             {
-                return palette[paletteOffset..(paletteOffset + bpp)];
+                return palette[index];
             }
             else
             {

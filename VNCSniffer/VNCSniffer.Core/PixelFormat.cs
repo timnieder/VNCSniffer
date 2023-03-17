@@ -47,6 +47,20 @@ namespace VNCSniffer.Core
             BlueShift = bytes[12];
         }
 
+        public static readonly PixelFormat Default = new PixelFormat()
+        {
+            BitsPerPixel = 32,
+            Depth = 24,
+            BigEndian = false,
+            TrueColor = true,
+            RedMax = 255,
+            GreenMax = 255,
+            BlueMax = 255,
+            RedShift = 16,
+            GreenShift = 8,
+            BlueShift = 0,
+        };
+
         public override bool Equals(object obj)
         {
             if (!(obj is PixelFormat))
