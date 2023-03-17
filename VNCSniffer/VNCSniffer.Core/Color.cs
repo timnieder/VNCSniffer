@@ -1,13 +1,7 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace VNCSniffer.Core
 {
@@ -45,6 +39,7 @@ namespace VNCSniffer.Core
                         clr = Unsafe.AsRef<byte>(ptr);
                         break;
                     default:
+                        Debug.Fail("Invalid PixelFormat.BytesPerPixel");
                         clr = 0;
                         break;
                 }
