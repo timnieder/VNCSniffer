@@ -69,6 +69,7 @@ namespace VNCSniffer.Core.Messages.Server
                 // Try to handle encoding
                 if (Encodings.Encodings.Handlers.TryGetValue(encoding, out var enc))
                 {
+                    //TODO: if Format == null: try to guess bpp & endianess (?)
                     var e = new FramebufferUpdateEvent(x, y, w, h);
                     var status = enc.Parse(ev, e, ref index);
                     if (status == ProcessStatus.NeedsMoreBytes)

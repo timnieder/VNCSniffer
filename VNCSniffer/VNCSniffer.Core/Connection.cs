@@ -181,6 +181,14 @@ namespace VNCSniffer.Core
                     {
                         var off = lineOffset + j * bpp;
                         var bOff = bLineOffset + j * forceBpp.Value;
+                        // Check if in buffer has enough bytes
+                        if (buffer.Length < (bOff + 3))
+                            return;
+
+                        // Check if framebuffer has enough space
+                        if (fBuffer.Length < (off + 3))
+                            return;
+
                         fBuffer[off] = buffer[bOff]; // b
                         fBuffer[off + 1] = buffer[bOff + 1]; // g
                         fBuffer[off + 2] = buffer[bOff + 2]; // r
@@ -191,6 +199,10 @@ namespace VNCSniffer.Core
             }
             if (w == Width)
             {
+                // Check if we write too much
+                if (buffer.Length > (fBuffer.Length - offset))
+                    return;
+
                 buffer.CopyTo(fBuffer[offset..]);
                 // overwrite alpha
                 for (var i = 3; i < buffer.Length; i += 4)
@@ -205,6 +217,14 @@ namespace VNCSniffer.Core
                 {
                     var fbLineOffset = i * bytesPerRow;
                     var inLineOffset = i * lineLength;
+                    // Check if in buffer has enough bytes
+                    if (buffer.Length < inLineOffset + lineLength)
+                        return;
+
+                    // Check if framebuffer has enough space
+                    if (fBuffer.Length < (offset + fbLineOffset + lineLength))
+                        return;
+
                     buffer[inLineOffset..(inLineOffset + lineLength)].CopyTo(fBuffer[(offset + fbLineOffset)..]);
                     // overwrite alpha
                     for (var j = 3; j < lineLength; j += 4)
@@ -240,6 +260,10 @@ namespace VNCSniffer.Core
             for (var i = 0; i < length; i++)
             {
                 var off = offset + i * bpp;
+                // Check if framebuffer has enough space
+                if (fBuffer.Length < (off + 3))
+                    return;
+
                 fBuffer[off] = clr[0]; // b
                 fBuffer[off + 1] = clr[1]; // g
                 fBuffer[off + 2] = clr[2]; // r
@@ -276,6 +300,10 @@ namespace VNCSniffer.Core
                 for (var j = 0; j < w; j++)
                 {
                     var off = lineOffset + j * bpp;
+                    // Check if framebuffer has enough space
+                    if (fBuffer.Length < (off + 3))
+                        return;
+
                     fBuffer[off] = clr[0]; // b
                     fBuffer[off + 1] = clr[1]; // g
                     fBuffer[off + 2] = clr[2]; // r
