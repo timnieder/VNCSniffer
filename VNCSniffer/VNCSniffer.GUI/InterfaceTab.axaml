@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:dd="clr-namespace:VNCSniffer.GUI.ViewModels;assembly=VNCSniffer.GUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 d:DataContext="{x:Static dd:DesignData.InterfaceTab}"
+             x:Class="VNCSniffer.GUI.InterfaceTab">
+	<StackPanel>
+		<Panel Height="40" Width="{Binding $parent.Width}">
+			<Label Margin="5,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+				Interfaces:
+			</Label>
+			<Button Margin="0,5,5,0" VerticalAlignment="Top" HorizontalAlignment="Right"
+					Command="{Binding OnRefreshButtonClick}">Refresh</Button>
+		</Panel>
+		<ScrollViewer>
+			<ListBox Items="{Binding Interfaces}" SelectionMode="Single">
+				<ListBox.ItemTemplate>
+					<DataTemplate>
+						<Panel>
+							<TextBlock VerticalAlignment="Center" Text="{Binding}"/>
+							<Button VerticalAlignment="Center" HorizontalAlignment="Right"
+									Command="{Binding $parent[ListBox].DataContext.OnInterfaceSelected}"
+									CommandParameter="{Binding}">Listen</Button>
+						</Panel>
+					</DataTemplate>
+				</ListBox.ItemTemplate>
+			</ListBox>
+		</ScrollViewer>
+	</StackPanel>
+</UserControl>
