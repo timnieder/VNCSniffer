@@ -61,12 +61,30 @@ namespace VNCSniffer.Core
                 // Reduction: Shift the value right so only the most significant bits remain
                 if (srcDepth > dstDepth)
                     val >>= (srcDepth - dstDepth);
-                // Extension: Shift the value left so the remaining bits get the most significance
+                // Extension: Copy the value's bits multiple times; truncate if needed
                 else
-                    val <<= (dstDepth - srcDepth);
+                {
+                    byte newVal = 0;
+                    // Start from the left and copy bits to the most left position
+                    // After that move srcDepth to the right and repeat
+                    for (var i = (dstDepth - srcDepth); true; i -= srcDepth)
+                    {
+                        // Haven't reached end => copy bits
+                        if (i > 0)
+                        {
+                            newVal |= (byte)(val << i);
+                        }
+                        else // Reached end, may need to truncate value
+                        {
+                            var truncate = i * -1;
+                            newVal |= (byte)(val >> truncate); // no need to shift left
+                            val = newVal;
+                            return;
+                        }
+                    }
+                }
             }
 
-            //TODO: can we make this better? 8->32bpp, 3->192 instead of 255
             Convert(ref R, format.RedMax, destFormat.RedMax);
             Convert(ref G, format.GreenMax, destFormat.GreenMax);
             Convert(ref B, format.BlueMax, destFormat.BlueMax);
