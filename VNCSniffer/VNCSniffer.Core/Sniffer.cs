@@ -1,7 +1,6 @@
 ﻿using PacketDotNet;
 using PacketDotNet.Connections;
 using SharpPcap;
-using SharpPcap.LibPcap;
 using System.Diagnostics;
 using System.Net;
 using VNCSniffer.Core.Messages;
@@ -16,7 +15,7 @@ namespace VNCSniffer.Core
             Connection = connection;
         }
     }
-    public class Sniffer
+    public static class Sniffer
     {
         public static Dictionary<TcpConnection, Connection> Connections = new();
         public static TcpConnectionManager TCPConnectionManager = new();
