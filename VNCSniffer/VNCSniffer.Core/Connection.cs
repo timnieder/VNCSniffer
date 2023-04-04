@@ -158,24 +158,25 @@ namespace VNCSniffer.Core
                 return false;
 
             // spoof a ethernet+ip+tcp message
-            var tcpPacket = new TcpPacket(src.Port, dst.Port);
-            var ipPacket = new IPv4Packet(src.IP, dst.IP);
-
-            //TODO: ip identification
-            ipPacket.FragmentFlags = 0b010; // dont fragment
-
-            // set seq and such
-            //idea: send packet with next sequencenumber, last acknumber
-            tcpPacket.Acknowledgment = true;
-            tcpPacket.Push = true;
-            tcpPacket.AcknowledgmentNumber = src.LastAckNumber;
-            tcpPacket.SequenceNumber = src.NextSequenceNumber;
-            tcpPacket.WindowSize = src.Window;
+            var tcpPacket = new TcpPacket(src.Port, dst.Port)
+            {
+                //idea: send packet with next sequencenumber, last acknumber
+                Acknowledgment = true,
+                Push = true,
+                AcknowledgmentNumber = src.LastAckNumber,
+                SequenceNumber = src.NextSequenceNumber,
+                WindowSize = src.Window
+            };
+            var ipPacket = new IPv4Packet(src.IP, dst.IP)
+            {
+                //TODO: ip identification
+                FragmentFlags = 0b010 // dont fragment
+            };
 
             // stitch packets together
             tcpPacket.PayloadData = content;
             ipPacket.PayloadPacket = tcpPacket;
-            //TODO: send
+
             if (src.MAC != null)
             {
                 var ethernetPacket = new EthernetPacket(src.MAC, dst.MAC, EthernetType.IPv4)
@@ -192,6 +193,7 @@ namespace VNCSniffer.Core
                 tcpPacket.UpdateTcpChecksum();
                 /// ethernet
                 ethernetPacket.UpdateCalculatedValues();
+                // send
                 Device.SendPacket(ethernetPacket);
             }
             else //TODO: doesnt work on local networks
@@ -202,26 +204,44 @@ namespace VNCSniffer.Core
             return true;
         }
 
+        //TODO: merge some code with the SendMessage func
         public bool ResetConnection(Participant src, Participant dst)
         {
             if (Device == null)
                 return false;
 
             // spoof a ip+tcp message
-            var tcpPacket = new TcpPacket(src.Port, dst.Port);
-            var ipPacket = new IPv4Packet(src.IP, dst.IP);
-
-            // set seq and such
-            //idea: send packet with rst flag
-            tcpPacket.AcknowledgmentNumber = src.LastAckNumber;
-            tcpPacket.SequenceNumber = src.NextSequenceNumber;
-            tcpPacket.Reset = true;
+            var tcpPacket = new TcpPacket(src.Port, dst.Port)
+            {
+                //idea: send packet with rst flag
+                AcknowledgmentNumber = src.LastAckNumber,
+                SequenceNumber = src.NextSequenceNumber,
+                WindowSize = src.Window,
+                Reset = true,
+            };
+            var ipPacket = new IPv4Packet(src.IP, dst.IP)
+            {
+                //TODO: ip identification
+                FragmentFlags = 0b010 // dont fragment
+            };
+            
             if (src.MAC != null)
             {
                 var ethernetPacket = new EthernetPacket(src.MAC, dst.MAC, EthernetType.IPv4)
                 {
                     PayloadPacket = ipPacket
                 };
+
+                // calculate checksum
+                /// ip
+                ipPacket.UpdateCalculatedValues();
+                ipPacket.UpdateIPChecksum();
+                /// tcp
+                tcpPacket.UpdateCalculatedValues();
+                tcpPacket.UpdateTcpChecksum();
+                /// ethernet
+                ethernetPacket.UpdateCalculatedValues();
+                // send
                 Device.SendPacket(ethernetPacket);
             }
             else
