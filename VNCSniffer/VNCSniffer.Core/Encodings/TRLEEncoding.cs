@@ -56,6 +56,7 @@ namespace VNCSniffer.Core.Encodings
             {
                 // the last row can be smaller than 16px high
                 var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % tileSize) : tileSize;
+                var lastEncoding = -1;
                 for (var j = 0; j < numTilesColumn; j++, tileX += tileSize)
                 {
                     // may not have enough bytes for the header
@@ -135,7 +136,7 @@ namespace VNCSniffer.Core.Encodings
                                     var length = 0;
                                     while (data[index] == 255)
                                     {
-                                        length += (data[index] + 1); // runLength - 1, so +1
+                                        length += data[index]; // 255
                                         if (data.Length < index + 1) // length not yet done, so we still need data
                                             return ProcessStatus.NeedsMoreBytes;
                                         index++;
@@ -195,6 +196,7 @@ namespace VNCSniffer.Core.Encodings
                             }
                     }
                     //Console.WriteLine($"Subencoding: {(SubencodingType)subencoding} ({subencoding})");
+                    lastEncoding = subencoding;
                 }
                 tileX = ev.x;
             }
@@ -224,7 +226,7 @@ namespace VNCSniffer.Core.Encodings
                     runLength = 0;
                     while (data[index] == 255) //TODO: merge with the one above?
                     {
-                        runLength += (data[index] + 1); // runLength - 1, so +1
+                        runLength += data[index]; // 255
                         if (data.Length < index + 1) // length not yet done, so we still need data
                             return ProcessStatus.NeedsMoreBytes;
                         index++;
