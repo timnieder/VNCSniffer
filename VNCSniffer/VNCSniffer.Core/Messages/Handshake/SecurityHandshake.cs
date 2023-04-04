@@ -13,7 +13,7 @@ namespace VNCSniffer.Core.Messages.Handshake
             if (ev.Data.Length == 1 + numberOfSecurityTypes)
             {
                 var encodings = string.Join(" ", ev.Data[1..].ToArray()); //TODO: better thing than copy?
-                ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort); // sent by server
+                ev.Connection.SetClientServer(ev.Destination, ev.Source); // sent by server
                 ev.Log($"Security Types ({numberOfSecurityTypes}): {encodings}");
                 return ProcessStatus.Handled;
             }
@@ -28,7 +28,8 @@ namespace VNCSniffer.Core.Messages.Handshake
             if (ev.Data.Length != 1)
                 return ProcessStatus.Invalid;
 
-            if (ev.Connection.Client != null && (!ev.Connection.Client.Equals(ev.Source) || !ev.Connection.ClientPort.Equals(ev.SourcePort)))
+            // only check if client is identified
+            if (ev.Connection.Client != null && !ev.Source.Matches(ev.Connection.Client.Value))
                 return ProcessStatus.Invalid; //TODO: shouldnt happen?
 
             var securityType = ev.Data[0];

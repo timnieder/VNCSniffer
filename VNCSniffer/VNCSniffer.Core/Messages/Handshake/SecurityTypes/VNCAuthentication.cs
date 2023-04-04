@@ -32,7 +32,7 @@ namespace VNCSniffer.Core.Messages.Handshake.SecurityTypes
             }
 
             ev.Connection.ChallengeResponse = ev.Data.ToArray(); //TODO: better thing than copy?
-            ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort); // sent by client
+            ev.Connection.SetClientServer(ev.Source, ev.Destination); // sent by client
             ev.Log($"Response: {BitConverter.ToString(ev.Connection.ChallengeResponse)}");
             return ProcessStatus.Handled;
         }

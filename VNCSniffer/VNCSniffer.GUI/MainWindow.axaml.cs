@@ -75,7 +75,7 @@ namespace VNCSniffer.GUI
             if (Connection.ContainsKey(con))
                 throw new Exception("Connection already has a tab.");
 
-            var tab = new ConnectionTabViewModel();
+            var tab = new ConnectionTabViewModel(con);
             // put into connection->tab lookup for later
             Connection.Add(con, tab);
             Dispatcher.UIThread.Post(() =>

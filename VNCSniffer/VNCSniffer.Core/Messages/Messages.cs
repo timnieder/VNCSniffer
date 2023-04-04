@@ -30,20 +30,16 @@ namespace VNCSniffer.Core.Messages
     {
         public class MessageEvent
         {
-            public IPAddress Source;
-            public ushort SourcePort;
-            public IPAddress Destination;
-            public ushort DestinationPort;
+            public Participant Source;
+            public Participant Destination;
             public Connection Connection;
             private byte[] DataArray;
             public ReadOnlySpan<byte> Data => DataArray;
 
-            public MessageEvent(IPAddress source, ushort sourcePort, IPAddress destination, ushort destPort, Connection connection, byte[] data)
+            public MessageEvent(Participant source, Participant destination, Connection connection, byte[] data)
             {
                 Source = source;
-                SourcePort = sourcePort;
                 Destination = destination;
-                DestinationPort = destPort;
                 Connection = connection;
                 DataArray = data;
             }
@@ -53,7 +49,7 @@ namespace VNCSniffer.Core.Messages
                 DataArray = data;
             }
 
-            public void Log(string text) => Connection.LogData(Source, SourcePort, Destination, DestinationPort, text);
+            public void Log(string text) => Connection.LogData(Source, Destination, text);
         }
 
         public enum ProcessStatus

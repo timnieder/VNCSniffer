@@ -22,7 +22,7 @@ namespace VNCSniffer.Core.Messages.Initialization
 
             var name = Encoding.Default.GetString(ev.Data[24..]);
 
-            ev.Connection.SetClientServer(ev.Destination, ev.DestinationPort, ev.Source, ev.SourcePort);
+            ev.Connection.SetClientServer(ev.Destination, ev.Source);
             ev.Connection.Width = width;
             ev.Connection.Height = height;
             ev.Connection.Format = format;

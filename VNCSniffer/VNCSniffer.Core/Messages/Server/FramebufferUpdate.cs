@@ -1,4 +1,5 @@
-﻿using System.Buffers.Binary;
+﻿using PacketDotNet.Tcp;
+using System.Buffers.Binary;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Messages.Server
@@ -71,9 +72,17 @@ namespace VNCSniffer.Core.Messages.Server
                 {
                     //TODO: if Format == null: try to guess bpp & endianess (?)
                     var e = new FramebufferUpdateEvent(x, y, w, h);
-                    var status = enc.Parse(ev, e, ref index);
-                    if (status == ProcessStatus.NeedsMoreBytes)
-                        return ProcessStatus.NeedsMoreBytes;
+                    try 
+                    { 
+                        var status = enc.Parse(ev, e, ref index);
+                        if (status == ProcessStatus.NeedsMoreBytes)
+                            return ProcessStatus.NeedsMoreBytes;
+                    }
+                    catch (Exception _)
+                    {
+                        //TODO: handle exception during parsing
+                        return ProcessStatus.Handled;
+                    }
 
                     // else it was handled
                 }

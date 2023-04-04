@@ -28,7 +28,7 @@ namespace VNCSniffer.Core.Messages.Handshake
             {
                 if (ev.Connection.ProtocolVersion != null)
                 {
-                    ev.Connection.SetClientServer(ev.Source, ev.SourcePort, ev.Destination, ev.DestinationPort);
+                    ev.Connection.SetClientServer(ev.Source, ev.Destination);
                 }
                 else //TODO: we shouldnt even hit this? so only tests
                 {

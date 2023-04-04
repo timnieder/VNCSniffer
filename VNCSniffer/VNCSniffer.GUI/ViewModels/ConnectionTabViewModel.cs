@@ -8,11 +8,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VNCSniffer.Core;
+using VNCSniffer.Core.Messages.Client;
 
 namespace VNCSniffer.GUI.ViewModels
 {
     public class ConnectionTabViewModel : ReactiveObject
     {
+        private Connection Connection;
         private string headerName;
         public string HeaderName
         {
@@ -40,6 +42,11 @@ namespace VNCSniffer.GUI.ViewModels
             BlueShift = 0,
         };
 
+        public ConnectionTabViewModel(Connection connection)
+        {
+            this.Connection = connection;
+        }
+
         public unsafe void ResizeFramebuffer(Connection con, int width, int height)
         {
             //TODO: rather resize than destroy it?
@@ -53,6 +60,12 @@ namespace VNCSniffer.GUI.ViewModels
             }
 
             // bitmap notifies image automatically that it has changed
+        }
+
+        public void OnSendButtonClick()
+        {
+            var msg = PointerEvent.Build(0, 100, 100);
+            Connection.SendMessage(Connection.Client.Value, Connection.Server.Value, msg);
         }
     }
 }

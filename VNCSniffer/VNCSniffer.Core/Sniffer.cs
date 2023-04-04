@@ -1,4 +1,5 @@
-﻿using PacketDotNet;
+﻿using Microsoft.VisualBasic;
+using PacketDotNet;
 using PacketDotNet.Connections;
 using SharpPcap;
 using System.Diagnostics;
@@ -79,6 +80,8 @@ namespace VNCSniffer.Core
             if (!Connections.TryGetValue(c, out var con))
             {
                 con = new();
+                if (typeof(IInjectionDevice).IsAssignableFrom(Device.GetType()))
+                    con.Device = (IInjectionDevice)Device;
                 Connections.Add(c, con);
             }
 
@@ -88,18 +91,18 @@ namespace VNCSniffer.Core
 
         public static void PacketHandler(PosixTimeval timeval, TcpConnection tcpConnection, TcpFlow flow, TcpPacket tcp)
         {
-            if (!tcp.HasPayloadData)
-                return;
-
-            var msg = tcp.PayloadData;
-            if (msg == null || msg.Length == 0)
-                return;
+            var seq = tcp.SequenceNumber;
+            var ack = tcp.AcknowledgmentNumber;
 
             var ip = (IPPacket)tcp.ParentPacket;
-            var source = ip.SourceAddress;
+            var sourceIP = ip.SourceAddress;
             var sourcePort = tcp.SourcePort;
-            var dest = ip.DestinationAddress;
+            var destIP = ip.DestinationAddress;
             var destPort = tcp.DestinationPort;
+
+            var ethernet = (EthernetPacket)ip.ParentPacket;
+            var sourceMac = ethernet != null ? ethernet.SourceHardwareAddress : null;
+            var destMac = ethernet != null ? ethernet.DestinationHardwareAddress : null;
 
             if (!Connections.TryGetValue(tcpConnection, out var connection))
             {
@@ -107,7 +110,39 @@ namespace VNCSniffer.Core
                 return;
             }
 
-            var parsed = ParseMessage(connection, source, sourcePort, dest, destPort, msg);
+            var source = new Participant(sourceIP, sourcePort, sourceMac);
+            var dest = new Participant(destIP, destPort, destMac);
+            // update source seq/ack
+            Participant? conSource = null;
+            if (source.Matches(connection.Client))
+                conSource = connection.Client;
+            else if (source.Matches(connection.Server))
+                conSource = connection.Server;
+
+            if (conSource.HasValue)
+            {
+                var val = conSource.Value;
+                val.LastSequenceNumber = seq;
+                val.NextSequenceNumber = seq;
+                val.LastAckNumber = ack;
+            }
+            
+
+            if (!tcp.HasPayloadData)
+                return;
+
+            var msg = tcp.PayloadData;
+            if (msg == null || msg.Length == 0)
+                return;
+
+            // update next seq number
+            if (conSource.HasValue)
+            {
+                var val = conSource.Value;
+                val.NextSequenceNumber = seq + (uint)msg.Length;
+            }
+
+            var parsed = ParseMessage(connection, source, dest, msg);
             if (parsed)
                 return;
 
@@ -115,13 +150,13 @@ namespace VNCSniffer.Core
             connection.RaiseUnknownMessageEvent(new(tcp, msg));
         }
 
-        private static bool ParseMessage(Connection connection, IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, byte[] data)
+        private static bool ParseMessage(Connection connection, Participant source, Participant dest, byte[] data)
         {
             var result = false;
 
             var buffer = data;
             // Check if we have any pakets buffered and if we do append ours
-            var conBuffer = connection.GetBuffer(source, sourcePort);
+            var conBuffer = connection.GetBuffer(source.IP, source.Port);
             if (conBuffer != null)
             {
                 var newBuffer = new byte[conBuffer.Length + buffer.Length];
@@ -131,7 +166,7 @@ namespace VNCSniffer.Core
             }
             // Our connection isnt initialized yet (or so we think)
             // Therefore we check from the laststate if any messages can be parsed
-            var ev = new Messages.Messages.MessageEvent(source, sourcePort, dest, destPort, connection, buffer);
+            var ev = new Messages.Messages.MessageEvent(source, dest, connection, buffer);
             if (connection.LastState < State.Initialized)
             {
                 for (var i = connection.LastState + 1; i < State.Initialized; i++)
@@ -150,12 +185,12 @@ namespace VNCSniffer.Core
             // parse c2s/s2c messages
             var checkClientMsgs = true;
             var checkServerMsgs = true;
-            if (source.Equals(connection.Client) && sourcePort.Equals(connection.ClientPort))
+            if (source.Matches(connection.Client))
             {
                 // source is the client => only check client msgs
                 checkServerMsgs = false;
             }
-            else if (source.Equals(connection.Server) && sourcePort.Equals(connection.ServerPort))
+            else if (source.Equals(connection.Server))
             {
                 // source is the server => only check server msgs
                 checkClientMsgs = false;
@@ -168,7 +203,7 @@ namespace VNCSniffer.Core
                     var handled = msgHandler.Handle(ev);
                     if (handled == Messages.Messages.ProcessStatus.Handled)
                     {
-                        connection.SetBuffer(source, sourcePort, null);
+                        connection.SetBuffer(source.IP, source.Port, null);
                         return true;
                     }
                     else if (handled == Messages.Messages.ProcessStatus.NeedsMoreBytes)
@@ -176,7 +211,7 @@ namespace VNCSniffer.Core
                         // save buffer for later processing
                         //TODO: save msg so we can start directly from there, also pls make it directly flow based
                         //Console.WriteLine("Need more bytes");
-                        connection.SetBuffer(source, sourcePort, buffer);
+                        connection.SetBuffer(source.IP, source.Port, buffer);
                         return true;
                     }
                 }

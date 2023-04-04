@@ -4,7 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="VNCSniffer.GUI.ConnectionTab">
-		<Grid RowDefinitions="*">
-			<Image Grid.Row="0" Name="Framebuffer" Stretch="Uniform" Source="{Binding Bitmap}"/>
+		<Grid RowDefinitions="40,*">
+			<Button Grid.Row="0" 
+					Command="{Binding OnSendButtonClick}">Send</Button>
+			<Image Grid.Row="1" Name="Framebuffer" Stretch="Uniform" Source="{Binding Bitmap}"/>
 		</Grid>
 </UserControl>

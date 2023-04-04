@@ -37,7 +37,7 @@ namespace VNCSniffer.Core.Tests.Messages.Handshake
         {
             // Setup
             Setup();
-            Connection.SetClientServer(Event.Source, Event.SourcePort, Event.Destination, Event.DestinationPort);
+            Connection.SetClientServer(Event.Source, Event.Destination);
 
             Event.SetData(Data);
             var handled = Message.Handle(Event);
@@ -52,7 +52,7 @@ namespace VNCSniffer.Core.Tests.Messages.Handshake
         {
             // Setup
             Setup();
-            Connection.SetClientServer(Event.Destination, Event.DestinationPort, Event.Source, Event.SourcePort);
+            Connection.SetClientServer(Event.Destination, Event.Source);
 
             Event.SetData(Data);
             var handled = Message.Handle(Event);

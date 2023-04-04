@@ -1,10 +1,46 @@
 ﻿using PacketDotNet;
+using SharpPcap;
 using System.Net;
+using System.Net.NetworkInformation;
 using VNCSniffer.Core.Messages;
 using VNCSniffer.Core.Messages.Initialization;
 
 namespace VNCSniffer.Core
 {
+    public struct Participant
+    {
+        public IPAddress IP;
+        public ushort Port;
+        // MAC doesn't have to exist, for example in loopback scenarios
+        public PhysicalAddress? MAC;
+
+        public uint LastSequenceNumber;
+        public uint NextSequenceNumber;
+        public uint LastAckNumber;
+
+        public Participant(IPAddress ip, ushort port, PhysicalAddress? mac)
+        {
+            IP = ip;
+            Port = port;
+            MAC = mac;
+        }
+
+        public bool Matches(IPAddress ip, ushort port)
+        {
+            return IP.Equals(ip) && Port.Equals(port);
+        }
+
+        //TODO: use equals?
+        public bool Matches(Participant src)
+        {
+            return Matches(src.IP, src.Port);
+        }
+        public bool Matches(Participant? src)
+        {
+            return src != null && Matches(src.Value.IP, src.Value.Port);
+        }
+    }
+
     public class Connection
     {
         public State LastState = State.Unknown;
@@ -15,11 +51,8 @@ namespace VNCSniffer.Core
         public byte[]? Buffer2;
 
         public string? ProtocolVersion;
-        //TODO: change those into a class containg both ip and port (or use flows?)
-        public IPAddress? Client;
-        public ushort? ClientPort;
-        public IPAddress? Server;
-        public ushort? ServerPort;
+        public Participant? Client;
+        public Participant? Server;
 
         public ushort? Width;
         public ushort? Height;
@@ -42,33 +75,32 @@ namespace VNCSniffer.Core
         public event EventHandler<ResizeFramebufferEvent>? OnFramebufferResize;
         public void RaiseResizeFramebufferEvent(ResizeFramebufferEvent e) => OnFramebufferResize?.Invoke(this, e);
 
+        public IInjectionDevice? Device;
 
-        public void LogData(IPAddress source, ushort sourcePort, IPAddress dest, ushort destPort, string text)
+        public void LogData(Participant source, Participant dest, string text)
         {
             var sourcePrefix = "";
             var destPrefix = "";
-            if (source.Equals(Client) && sourcePort.Equals(ClientPort))
+            if (source.Matches(Client))
             {
                 sourcePrefix = "C";
                 destPrefix = "S";
             }
-            else if (source.Equals(Server) && destPort.Equals(ServerPort))
+            else if (source.Matches(Server))
             {
                 sourcePrefix = "S";
                 destPrefix = "C";
             }
-            Console.WriteLine($"[{sourcePrefix}]{source}:{sourcePort}->[{destPrefix}]{dest}:{destPort}: {text}");
+            Console.WriteLine($"[{sourcePrefix}]{source.IP}:{source.Port}->[{destPrefix}]{dest.IP}:{dest.Port}: {text}");
         }
 
-        public void SetClientServer(IPAddress client, ushort clientPort, IPAddress server, ushort serverPort)
+        public void SetClientServer(Participant client, Participant server)
         {
             if (Client != null) // don't overwrite
                 return;
 
             Client = client;
-            ClientPort = clientPort;
             Server = server;
-            ServerPort = serverPort;
         }
 
         public byte[]? GetBuffer(IPAddress address, ushort port)
@@ -108,6 +140,72 @@ namespace VNCSniffer.Core
             this.framebuffer = framebuffer;
             this.framebufferLength = length;
             this.FramebufferPixelFormat = fbFormat;
+        }
+
+        public bool SendMessage(Participant src, Participant dst, byte[] content)
+        {
+            if (Device == null)
+                return false;
+
+            // spoof a ethernet+ip+tcp message
+            var tcpPacket = new TcpPacket(src.Port, dst.Port);
+            var ipPacket = new IPv4Packet(src.IP, dst.IP);
+
+            // set seq and such
+            //idea: send packet with next sequencenumber, last acknumber
+            tcpPacket.Acknowledgment = true;
+            tcpPacket.Push = true;
+            tcpPacket.AcknowledgmentNumber = src.LastAckNumber;
+            tcpPacket.SequenceNumber = src.NextSequenceNumber;
+
+            // stitch packets together
+            tcpPacket.PayloadData = content;
+            ipPacket.PayloadPacket = tcpPacket;
+            //TODO: send
+            if (src.MAC != null)
+            {
+                var ethernetPacket = new EthernetPacket(src.MAC, dst.MAC, EthernetType.IPv4)
+                {
+                    PayloadPacket = ipPacket
+                };
+                Device.SendPacket(ethernetPacket);
+            }
+            else //TODO: doesnt work on local networks
+            {
+                //Device.SendPacket(ipPacket);
+                return false;
+            }
+            return true;
+        }
+
+        public bool ResetConnection(Participant src, Participant dst)
+        {
+            if (Device == null)
+                return false;
+
+            // spoof a ip+tcp message
+            var tcpPacket = new TcpPacket(src.Port, dst.Port);
+            var ipPacket = new IPv4Packet(src.IP, dst.IP);
+
+            // set seq and such
+            //idea: send packet with rst flag
+            tcpPacket.AcknowledgmentNumber = src.LastAckNumber;
+            tcpPacket.SequenceNumber = src.NextSequenceNumber;
+            tcpPacket.Reset = true;
+            if (src.MAC != null)
+            {
+                var ethernetPacket = new EthernetPacket(src.MAC, dst.MAC, EthernetType.IPv4)
+                {
+                    PayloadPacket = ipPacket
+                };
+                Device.SendPacket(ethernetPacket);
+            }
+            else
+            {
+                return false;
+            }
+
+            return false;
         }
 
         // Drawing
