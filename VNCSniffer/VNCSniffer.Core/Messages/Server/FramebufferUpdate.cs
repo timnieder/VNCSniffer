@@ -1,5 +1,6 @@
 ﻿using PacketDotNet.Tcp;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Messages.Server
@@ -78,8 +79,9 @@ namespace VNCSniffer.Core.Messages.Server
                         if (status == ProcessStatus.NeedsMoreBytes)
                             return ProcessStatus.NeedsMoreBytes;
                     }
-                    catch (Exception _)
+                    catch (Exception ex)
                     {
+                        Debug.Fail($"Exception during Encoding.Parse: {ex}");
                         //TODO: handle exception during parsing
                         return ProcessStatus.Handled;
                     }
@@ -88,7 +90,7 @@ namespace VNCSniffer.Core.Messages.Server
                 }
                 else
                 {
-                    Console.WriteLine($"Encoding {encoding} not supported"); //TODO: can we do anything else?
+                    Debug.Fail($"Encoding {encoding} not supported");
                     //TODO: break? fallthrough and assume length is 0?
                 }
                 rectangles.Add(new Rectangle() { x = x, y = y, w = w, h = h, encoding = encoding });

@@ -52,11 +52,11 @@ namespace VNCSniffer.Core.Encodings
             //TODO: make into pixel array
             List<Color> palette = null;
             //TODO: use different palettes for palette and paletteRLE?
+            var lastEncoding = -1;
             for (var i = 0; i < numTilesRow; i++, tileY += tileSize)
             {
                 // the last row can be smaller than 16px high
                 var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % tileSize) : tileSize;
-                var lastEncoding = -1;
                 for (var j = 0; j < numTilesColumn; j++, tileX += tileSize)
                 {
                     // may not have enough bytes for the header
@@ -235,7 +235,7 @@ namespace VNCSniffer.Core.Encodings
                     // index is increased outside the if
                 }
                 index++;
-                var clr = GetColorFromPalette(paletteIndex, palette, bpp); //TODO: make clr/pixel
+                var clr = GetColorFromPalette(paletteIndex, palette, bpp);
                 if (clr != null)
                 {
                     // draw the run
@@ -293,11 +293,11 @@ namespace VNCSniffer.Core.Encodings
             index += packedPixelsLength;
         }
 
-        public static Color? GetColorFromPalette(byte index, List<Color> palette, int bpp)
+        public static Color? GetColorFromPalette(byte paletteIndex, List<Color> palette, int bpp)
         {
-            if (index < palette.Count)
+            if (paletteIndex < palette.Count)
             {
-                return palette[index];
+                return palette[paletteIndex];
             }
             else
             {

@@ -115,7 +115,7 @@ namespace VNCSniffer.Core
             var destIP = ip.DestinationAddress;
             var destPort = tcp.DestinationPort;
 
-            var ethernet = (EthernetPacket)ip.ParentPacket;
+            var ethernet = ip.ParentPacket is EthernetPacket ? (EthernetPacket)ip.ParentPacket : null;
             var sourceMac = ethernet?.SourceHardwareAddress;
             var destMac = ethernet?.DestinationHardwareAddress;
 

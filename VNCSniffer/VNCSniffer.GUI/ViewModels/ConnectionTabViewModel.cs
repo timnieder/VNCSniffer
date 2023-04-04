@@ -59,7 +59,7 @@ namespace VNCSniffer.GUI.ViewModels
                 con.SetFramebuffer(address, length, FBPixelFormat);
             }
 
-            // bitmap notifies image automatically that it has changed
+            // bitmap notifies image automatically that it has changed //TODO: apparently not. fix thisss
         }
 
         public void OnSendButtonClick()

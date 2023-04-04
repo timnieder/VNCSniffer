@@ -57,7 +57,7 @@ namespace VNCSniffer.Core.Tests.Encodings
             {
                 Format = Format
             };
-            Event = new MessageEvent(IPAddress.None, 0, IPAddress.None, 0, Connection, null);
+            Event = new MessageEvent(new(IPAddress.None, 0), new(IPAddress.None, 0), Connection, null);
             UpdateEvent = new FramebufferUpdateEvent(PacketX, PacketY, PacketW, PacketH);
         }
 

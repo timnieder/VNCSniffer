@@ -55,7 +55,7 @@ namespace VNCSniffer.Core.Tests.Messages
             ushort sourcePort = 59404;
             var dest = new IPAddress(new byte[] { 192, 168, 0, 5 });
             ushort destPort = 5900;
-            Event = new MessageEvent(source, sourcePort, dest, destPort, Connection, null);
+            Event = new MessageEvent(new(source, sourcePort), new(dest, destPort), Connection, null);
         }
     }
 }

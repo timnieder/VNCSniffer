@@ -19,10 +19,14 @@ namespace VNCSniffer.Core
         public uint LastAckNumber;
         public ushort Window;
 
-        public Participant(IPAddress ip, ushort port, PhysicalAddress? mac)
+        public Participant(IPAddress ip, ushort port)
         {
             IP = ip;
             Port = port;
+        }
+
+        public Participant(IPAddress ip, ushort port, PhysicalAddress? mac) : this(ip, port)
+        {
             MAC = mac;
         }
 

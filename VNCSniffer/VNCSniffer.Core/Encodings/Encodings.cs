@@ -15,9 +15,13 @@ namespace VNCSniffer.Core.Encodings
             { 5, new HextileEncoding() },
             { 15, new TRLEEncoding() },
             { 16, new ZRLEEncoding() },
+            // Extensions
             // Pseudo
             { -223, new DesktopSizePseudoEncoding() },
             { -239, new CursorPseudoEncoding() },
+            // Pseudo Extensions
+            { -232, new PointerPosPseudoEncoding() },
+            { -308, new ExtendedDesktopSizePseudoEncoding() },
         };
     }
 
