@@ -70,6 +70,13 @@ namespace VNCSniffer.Core
 
             if (tcpPacket != null)
             {
+                // manually set the ethernet packet in the chain, because of https://github.com/dotpcap/packetnet/issues/115
+                var ip = tcpPacket.ParentPacket;
+                if (ip != null)
+                {
+                    if (ip.ParentPacket == null)
+                        ip.ParentPacket = p;
+                }
                 // Pass the packet to the connection manager
                 TCPConnectionManager.ProcessPacket(rawPacket.Timeval, tcpPacket);
             }
@@ -91,8 +98,16 @@ namespace VNCSniffer.Core
 
         public static void PacketHandler(PosixTimeval timeval, TcpConnection tcpConnection, TcpFlow flow, TcpPacket tcp)
         {
+            if (!Connections.TryGetValue(tcpConnection, out var connection))
+            {
+                Debug.Fail("No connection found for tcp connection.");
+                return;
+            }
+
+            // collect metadata
             var seq = tcp.SequenceNumber;
             var ack = tcp.AcknowledgmentNumber;
+            var window = tcp.WindowSize;
 
             var ip = (IPPacket)tcp.ParentPacket;
             var sourceIP = ip.SourceAddress;
@@ -101,15 +116,10 @@ namespace VNCSniffer.Core
             var destPort = tcp.DestinationPort;
 
             var ethernet = (EthernetPacket)ip.ParentPacket;
-            var sourceMac = ethernet != null ? ethernet.SourceHardwareAddress : null;
-            var destMac = ethernet != null ? ethernet.DestinationHardwareAddress : null;
+            var sourceMac = ethernet?.SourceHardwareAddress;
+            var destMac = ethernet?.DestinationHardwareAddress;
 
-            if (!Connections.TryGetValue(tcpConnection, out var connection))
-            {
-                Debug.Fail("No connection found for tcp connection.");
-                return;
-            }
-
+            // build participants
             var source = new Participant(sourceIP, sourcePort, sourceMac);
             var dest = new Participant(destIP, destPort, destMac);
             // update source seq/ack
@@ -119,15 +129,9 @@ namespace VNCSniffer.Core
             else if (source.Matches(connection.Server))
                 conSource = connection.Server;
 
-            if (conSource.HasValue)
-            {
-                var val = conSource.Value;
-                val.LastSequenceNumber = seq;
-                val.NextSequenceNumber = seq;
-                val.LastAckNumber = ack;
-            }
-            
+            conSource?.SetTCPData(seq, seq, ack, window);
 
+            // read data
             if (!tcp.HasPayloadData)
                 return;
 
@@ -135,13 +139,10 @@ namespace VNCSniffer.Core
             if (msg == null || msg.Length == 0)
                 return;
 
-            // update next seq number
-            if (conSource.HasValue)
-            {
-                var val = conSource.Value;
-                val.NextSequenceNumber = seq + (uint)msg.Length;
-            }
+            // update next seq number, if conSource found
+            conSource?.SetNextSequenceNumber(seq + (uint)msg.Length);
 
+            // (try to) parse packet
             var parsed = ParseMessage(connection, source, dest, msg);
             if (parsed)
                 return;

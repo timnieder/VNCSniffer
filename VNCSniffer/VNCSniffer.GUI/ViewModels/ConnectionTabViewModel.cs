@@ -65,7 +65,7 @@ namespace VNCSniffer.GUI.ViewModels
         public void OnSendButtonClick()
         {
             var msg = PointerEvent.Build(0, 100, 100);
-            Connection.SendMessage(Connection.Client.Value, Connection.Server.Value, msg);
+            Connection.SendMessage(Connection.Client!, Connection.Server!, msg);
         }
     }
 }

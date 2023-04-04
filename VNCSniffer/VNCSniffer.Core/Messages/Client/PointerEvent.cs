@@ -25,10 +25,11 @@ namespace VNCSniffer.Core.Messages.Client
         public static byte[] Build(byte mask, ushort x, ushort y)
         {
             var buffer = new byte[6];
-            buffer[0] = 5; // message type 5
-            buffer[1] = mask;
-            BinaryPrimitives.WriteUInt16BigEndian(buffer, x);
-            BinaryPrimitives.WriteUInt16BigEndian(buffer, y);
+            var span = buffer.AsSpan<byte>();
+            span[0] = 5; // message type 5
+            span[1] = mask;
+            BinaryPrimitives.WriteUInt16BigEndian(span[2..], x);
+            BinaryPrimitives.WriteUInt16BigEndian(span[4..], y);
             return buffer;
         }
     }

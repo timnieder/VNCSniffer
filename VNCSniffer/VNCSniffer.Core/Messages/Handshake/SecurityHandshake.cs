@@ -29,7 +29,7 @@ namespace VNCSniffer.Core.Messages.Handshake
                 return ProcessStatus.Invalid;
 
             // only check if client is identified
-            if (ev.Connection.Client != null && !ev.Source.Matches(ev.Connection.Client.Value))
+            if (ev.Connection.Client != null && !ev.Source.Matches(ev.Connection.Client))
                 return ProcessStatus.Invalid; //TODO: shouldnt happen?
 
             var securityType = ev.Data[0];

@@ -53,6 +53,10 @@ namespace VNCSniffer.Core
         // Additionally color correct the value to the destination pixelformat
         public Color(ReadOnlySpan<byte> bytes, PixelFormat format, byte bpp, PixelFormat destFormat) : this(bytes, format, bpp)
         {
+            //TODO: try to guess format
+            if (destFormat == null)
+                return;
+
             // Taken from https://github.com/MarcusWichelmann/MarcusW.VncClient/blob/master/src/MarcusW.VncClient/Protocol/Implementation/PixelConversions.cs#L156
             void Convert(ref byte val, ushort max, ushort dstMax)
             {

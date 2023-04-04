@@ -7,7 +7,7 @@ using VNCSniffer.Core.Messages.Initialization;
 
 namespace VNCSniffer.Core
 {
-    public struct Participant
+    public class Participant
     {
         public IPAddress IP;
         public ushort Port;
@@ -17,6 +17,7 @@ namespace VNCSniffer.Core
         public uint LastSequenceNumber;
         public uint NextSequenceNumber;
         public uint LastAckNumber;
+        public ushort Window;
 
         public Participant(IPAddress ip, ushort port, PhysicalAddress? mac)
         {
@@ -25,19 +26,28 @@ namespace VNCSniffer.Core
             MAC = mac;
         }
 
+        public void SetTCPData(uint lastSeq, uint nextSeq, uint lastAck, ushort window)
+        {
+            LastSequenceNumber = lastSeq;
+            NextSequenceNumber = nextSeq;
+            LastAckNumber = lastAck;
+            Window = window;
+        }
+
+        public void SetNextSequenceNumber(uint nextSeq)
+        { 
+            NextSequenceNumber = nextSeq;
+        }
+
         public bool Matches(IPAddress ip, ushort port)
         {
             return IP.Equals(ip) && Port.Equals(port);
         }
 
         //TODO: use equals?
-        public bool Matches(Participant src)
-        {
-            return Matches(src.IP, src.Port);
-        }
         public bool Matches(Participant? src)
         {
-            return src != null && Matches(src.Value.IP, src.Value.Port);
+            return src != null && Matches(src.IP, src.Port);
         }
     }
 
@@ -151,12 +161,16 @@ namespace VNCSniffer.Core
             var tcpPacket = new TcpPacket(src.Port, dst.Port);
             var ipPacket = new IPv4Packet(src.IP, dst.IP);
 
+            //TODO: ip identification
+            ipPacket.FragmentFlags = 0b010; // dont fragment
+
             // set seq and such
             //idea: send packet with next sequencenumber, last acknumber
             tcpPacket.Acknowledgment = true;
             tcpPacket.Push = true;
             tcpPacket.AcknowledgmentNumber = src.LastAckNumber;
             tcpPacket.SequenceNumber = src.NextSequenceNumber;
+            tcpPacket.WindowSize = src.Window;
 
             // stitch packets together
             tcpPacket.PayloadData = content;
@@ -168,6 +182,16 @@ namespace VNCSniffer.Core
                 {
                     PayloadPacket = ipPacket
                 };
+
+                // calculate checksum
+                /// ip
+                ipPacket.UpdateCalculatedValues();
+                ipPacket.UpdateIPChecksum();
+                /// tcp
+                tcpPacket.UpdateCalculatedValues();
+                tcpPacket.UpdateTcpChecksum();
+                /// ethernet
+                ethernetPacket.UpdateCalculatedValues();
                 Device.SendPacket(ethernetPacket);
             }
             else //TODO: doesnt work on local networks
