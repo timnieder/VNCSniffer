@@ -1,12 +1,7 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 using ReactiveUI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VNCSniffer.Core;
 using VNCSniffer.Core.Messages.Client;
 
@@ -60,6 +55,12 @@ namespace VNCSniffer.GUI.ViewModels
             }
 
             // bitmap notifies image automatically that it has changed //TODO: apparently not. fix thisss
+        }
+
+        public void OnRefreshButtonClick(Image img)
+        {
+            // Repaint framebuffer
+            img.InvalidateVisual();
         }
 
         public void OnSendButtonClick()

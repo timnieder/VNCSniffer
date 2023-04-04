@@ -5,8 +5,13 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="VNCSniffer.GUI.ConnectionTab">
 		<Grid RowDefinitions="40,*">
-			<Button Grid.Row="0" 
+			<StackPanel Grid.Row="0" Orientation="Horizontal">
+				<Button
+					Command="{Binding OnRefreshButtonClick}" CommandParameter="{Binding #Framebuffer}">Refresh</Button>
+				<Button
 					Command="{Binding OnSendButtonClick}">Send</Button>
+			</StackPanel>
+			
 			<Image Grid.Row="1" Name="Framebuffer" Stretch="Uniform" Source="{Binding Bitmap}"/>
 		</Grid>
 </UserControl>
