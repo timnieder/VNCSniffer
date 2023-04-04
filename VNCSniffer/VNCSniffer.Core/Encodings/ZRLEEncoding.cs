@@ -20,7 +20,7 @@ namespace VNCSniffer.Core.Encodings
 
             var zlibData = e.Data[index..(index + dataLength)];
             //TODO: can we just do this? dont we need a zlib object?
-            var data = ZlibStream.UncompressBuffer(zlibData.ToArray());
+            var data = DeflateStream.UncompressBuffer(zlibData.ToArray());
             index += dataLength;
 
             var zLibDataIndex = 0; // as we're working on a new buffer we need to have a new index
