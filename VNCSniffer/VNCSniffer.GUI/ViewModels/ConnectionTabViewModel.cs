@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using ReactiveUI;
+using System;
 using VNCSniffer.Core;
 using VNCSniffer.Core.Messages.Client;
 
@@ -22,6 +23,8 @@ namespace VNCSniffer.GUI.ViewModels
             get => bitmap;
             set => this.RaiseAndSetIfChanged(ref bitmap, value);
         }
+
+        public Image? Image = null;
 
         public static readonly PixelFormat FBPixelFormat = new PixelFormat()
         {
@@ -55,6 +58,14 @@ namespace VNCSniffer.GUI.ViewModels
             }
 
             // bitmap notifies image automatically that it has changed //TODO: apparently not. fix thisss
+        }
+
+        public void RefreshFramebuffer(Connection con) 
+        {
+            if (Image == null)
+                throw new Exception("Image not set");
+
+            Image.InvalidateVisual();
         }
 
         public void OnRefreshButtonClick(Image img)

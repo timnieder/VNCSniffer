@@ -16,6 +16,7 @@ namespace VNCSniffer.GUI
         public ConnectionTab(ConnectionTabViewModel vm) : this()
         {
             DataContext = vm;
+            vm.Image = Framebuffer; //TODO: this is probably not how you mvvm
         }
 
         public ConnectionTab()

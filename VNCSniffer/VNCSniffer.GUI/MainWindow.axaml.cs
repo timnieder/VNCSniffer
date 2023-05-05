@@ -98,6 +98,14 @@ namespace VNCSniffer.GUI
             tab.ResizeFramebuffer(con, width, height);
         }
 
+        public void RefreshFramebuffer(Connection con)
+        {
+            if (!Connection.TryGetValue(con, out var tab))
+                throw new Exception($"Tab for Connection {con} doesn't exist.");
+
+            tab.RefreshFramebuffer(con);
+        }
+
         public void OnDeviceSelected(ICaptureDevice device)
         {
             this.InterfaceTab.IsVisible = false;

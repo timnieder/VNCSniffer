@@ -83,6 +83,8 @@ namespace VNCSniffer.Core.Messages.Server
                     {
                         Debug.Fail($"Exception during Encoding.Parse: {ex}");
                         //TODO: handle exception during parsing
+                        // problem occured, but something probably still changed, so refresh
+                        ev.Connection.RaiseFramebufferRefreshEvent();
                         return ProcessStatus.Handled;
                     }
 
@@ -96,6 +98,8 @@ namespace VNCSniffer.Core.Messages.Server
                 rectangles.Add(new Rectangle() { x = x, y = y, w = w, h = h, encoding = encoding });
             }
             ev.Log($"FramebufferUpdate: Rectangles ({numberOfRectangles}): {string.Join(";", rectangles)}");
+            // notify that the framebuffer should be refreshed
+            ev.Connection.RaiseFramebufferRefreshEvent();
             return ProcessStatus.Handled;
         }
     }

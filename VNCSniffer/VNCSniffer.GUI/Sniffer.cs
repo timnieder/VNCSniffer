@@ -64,6 +64,7 @@ namespace VNCSniffer.GUI
             // Hook up events
             e.Connection.OnServerInit += Connection_OnServerInit;
             e.Connection.OnFramebufferResize += Connection_OnFramebufferResize;
+            e.Connection.OnFramebufferRefresh += Connection_OnFramebufferRefresh;
         }
 
         private static void Connection_OnFramebufferResize(object? sender, ResizeFramebufferEvent e)
@@ -74,6 +75,16 @@ namespace VNCSniffer.GUI
             // notify the bitmap holder to resize the framebuffer
             var con = (Connection)sender;
             MainWindow.ResizeFramebuffer(con, e.Width, e.Height);
+        }
+
+        private static void Connection_OnFramebufferRefresh(object? sender, FramebufferRefreshEvent e)
+        {
+            if (sender is not Connection)
+                return;
+
+            // notify the bitmap holder to render the framebuffer
+            var con = (Connection)sender;
+            MainWindow.RefreshFramebuffer(con);
         }
 
         private static unsafe void Connection_OnServerInit(object? sender, Core.Messages.Initialization.ServerInitEvent e)
