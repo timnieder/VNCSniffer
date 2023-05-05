@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using ReactiveUI;
 using System;
+using System.Diagnostics;
 using VNCSniffer.Core;
 using VNCSniffer.Core.Messages.Client;
 
@@ -50,7 +51,16 @@ namespace VNCSniffer.GUI.ViewModels
         public unsafe void ResizeFramebuffer(Connection con, int width, int height)
         {
             //TODO: rather resize than destroy it?
-            Bitmap = new(new(width, height), new Vector(96, 96), Avalonia.Platform.PixelFormat.Bgra8888, Avalonia.Platform.AlphaFormat.Opaque);
+            //TODO: needs lock?
+            try
+            {
+                Bitmap = new(new(width, height), new Vector(96, 96), Avalonia.Platform.PixelFormat.Bgra8888, Avalonia.Platform.AlphaFormat.Opaque);
+            } 
+            catch (Exception e) 
+            {
+                Debug.Fail($"Exception during Bitmap resizing: {e}");
+                return;
+            }
             using var bmp = Bitmap.Lock(); //TODO: need using?
             unsafe
             {

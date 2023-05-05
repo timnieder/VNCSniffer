@@ -88,7 +88,9 @@ namespace VNCSniffer.Core
         public void RaiseServerInitEvent(ServerInitEvent e) => OnServerInit?.Invoke(this, e);
         public event EventHandler<ResizeFramebufferEvent>? OnFramebufferResize;
         public void RaiseResizeFramebufferEvent(ResizeFramebufferEvent e) => OnFramebufferResize?.Invoke(this, e);
-        
+        public void RaiseResizeFramebufferEvent() => RaiseResizeFramebufferEvent(new(Width!.Value, Height!.Value));
+
+
         public event EventHandler<FramebufferRefreshEvent>? OnFramebufferRefresh;
         public void RaiseFramebufferRefreshEvent(FramebufferRefreshEvent e) => OnFramebufferRefresh?.Invoke(this, e);
         public void RaiseFramebufferRefreshEvent() => RaiseFramebufferRefreshEvent(new());

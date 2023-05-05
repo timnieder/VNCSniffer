@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using VNCSniffer.Core.Messages.Server;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Messages.Client
@@ -19,6 +20,9 @@ namespace VNCSniffer.Core.Messages.Client
             var y = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[4..]);
             var w = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[6..]);
             var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[8..]);
+
+            // Check if the framebufferupdaterequest is bigger than our current size => resize
+            FramebufferUpdate.CheckFramebufferSize(ev.Connection, x + w, y + h);
 
             ev.Log($"FramebufferUpdateRequest: Incremental ({incremental}), X ({x}), Y ({y}), W ({w}), H ({h})");
             return ProcessStatus.Handled;

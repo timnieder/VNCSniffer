@@ -13,7 +13,7 @@ namespace VNCSniffer.Core.Messages.Handshake
             if (ev.Data.Length == 1 + numberOfSecurityTypes)
             {
                 var encodings = string.Join(" ", ev.Data[1..].ToArray()); //TODO: better thing than copy?
-                ev.Connection.SetClientServer(ev.Destination, ev.Source); // sent by server
+                //ev.Connection.SetClientServer(ev.Destination, ev.Source); // sent by server //INFO: this conflicts with pointerevents, so dont set
                 ev.Log($"Security Types ({numberOfSecurityTypes}): {encodings}");
                 return ProcessStatus.Handled;
             }

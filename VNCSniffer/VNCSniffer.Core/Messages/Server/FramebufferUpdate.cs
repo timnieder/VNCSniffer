@@ -71,6 +71,8 @@ namespace VNCSniffer.Core.Messages.Server
                 // Try to handle encoding
                 if (Encodings.Encodings.Handlers.TryGetValue(encoding, out var enc))
                 {
+                    // only check framebuffer size if we have a known encoding, cause else it could corrupt the buffer
+                    CheckFramebufferSize(ev.Connection, x + w, y + h);
                     //TODO: if Format == null: try to guess bpp & endianess (?)
                     var e = new FramebufferUpdateEvent(x, y, w, h);
                     try 
@@ -97,6 +99,7 @@ namespace VNCSniffer.Core.Messages.Server
                 else
                 {
                     Debug.Fail($"Encoding {encoding} not supported");
+                    return ProcessStatus.Handled; // stop, so we dont corrupt anything else
                     //TODO: break? fallthrough and assume length is 0?
                 }
                 rectangles.Add(new Rectangle() { x = x, y = y, w = w, h = h, encoding = encoding });
@@ -105,6 +108,29 @@ namespace VNCSniffer.Core.Messages.Server
             // notify that the framebuffer should be refreshed
             ev.Connection.RaiseFramebufferRefreshEvent();
             return ProcessStatus.Handled;
+        }
+
+        public static void CheckFramebufferSize(Connection con, int totalWidth, int totalHeight)
+        {
+            if (totalWidth > 10000 || totalHeight > 10000) //TODO: make this limit configurable
+                return;
+
+            //TODO: only optionally activate?
+            // Check if the framebufferupdaterequest is bigger than our current size => resize
+            var resizeFound = false;
+            if (con.Width == null || totalWidth > con.Width)
+            {
+                con.Width = (ushort)totalWidth;
+                resizeFound = true;
+            }
+            if (con.Height == null || totalHeight > con.Height)
+            {
+                con.Height = (ushort)totalWidth;
+                resizeFound = true;
+            }
+
+            if (resizeFound)
+                con.RaiseResizeFramebufferEvent();
         }
     }
 }
