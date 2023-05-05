@@ -1,5 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using ReactiveUI;
 using System;
@@ -74,9 +76,26 @@ namespace VNCSniffer.GUI.ViewModels
             img.InvalidateVisual();
         }
 
+        public void OnImageClicked(TappedEventArgs ev)
+        {
+            var pos = ev.GetPosition(Image);
+            Console.WriteLine(pos);
+            var relX = pos.X / Image!.Bounds.Width;
+            var relY = pos.Y / Image!.Bounds.Height;
+            var x = (ushort)(relX * Bitmap.Size.Width);
+            var y = (ushort)(relY * Bitmap.Size.Height);
+            SendPointerMove(x, y);
+        }
+
         public void OnSendButtonClick()
         {
             var msg = PointerEvent.Build(0, 100, 100);
+            Connection.SendMessage(Connection.Client!, Connection.Server!, msg);
+        }
+
+        public void SendPointerMove(ushort x, ushort y)
+        {
+            var msg = PointerEvent.Build(0, x, y);
             Connection.SendMessage(Connection.Client!, Connection.Server!, msg);
         }
     }

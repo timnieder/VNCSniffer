@@ -77,7 +77,11 @@ namespace VNCSniffer.Core.Messages.Server
                     { 
                         var status = enc.Parse(ev, e, ref index);
                         if (status == ProcessStatus.NeedsMoreBytes)
+                        {
+                            //FIXME: also update here cause if we get a huge fuckin update (ie hextile on 4k) we will be stuck here for some time
+                            ev.Connection.RaiseFramebufferRefreshEvent();
                             return ProcessStatus.NeedsMoreBytes;
+                        }
                     }
                     catch (Exception ex)
                     {

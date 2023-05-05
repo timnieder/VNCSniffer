@@ -12,6 +12,6 @@
 					Command="{Binding OnSendButtonClick}">Send</Button>
 			</StackPanel>
 			
-			<Image Grid.Row="1" Name="Framebuffer" Stretch="Uniform" Source="{Binding Bitmap}"/>
+			<Image Grid.Row="1" Name="Framebuffer" Stretch="Uniform" Source="{Binding Bitmap}" DoubleTapped="OnImageClicked"/>
 		</Grid>
 </UserControl>
