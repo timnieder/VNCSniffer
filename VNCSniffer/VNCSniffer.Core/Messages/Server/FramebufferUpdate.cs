@@ -1,6 +1,7 @@
 ﻿using PacketDotNet.Tcp;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Drawing;
 using static VNCSniffer.Core.Messages.Messages;
 
 namespace VNCSniffer.Core.Messages.Server
@@ -11,7 +12,7 @@ namespace VNCSniffer.Core.Messages.Server
         public ushort y;
         public ushort w;
         public ushort h;
-        public int encoding;
+        public Encodings.Encodings.Encoding encoding;
 
         public override string ToString()
         {
@@ -66,10 +67,11 @@ namespace VNCSniffer.Core.Messages.Server
                 var w = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 4)..]);
                 var h = BinaryPrimitives.ReadUInt16BigEndian(ev.Data[(index + 6)..]);
                 var encoding = BinaryPrimitives.ReadInt32BigEndian(ev.Data[(index + 8)..]);
+                var rectangle = new Rectangle() { x = x, y = y, w = w, h = h, encoding = (Encodings.Encodings.Encoding)encoding };
                 index += 12; // increment past header
 
                 // Try to handle encoding
-                if (Encodings.Encodings.Handlers.TryGetValue(encoding, out var enc))
+                if (Encodings.Encodings.Handlers.TryGetValue(rectangle.encoding, out var enc))
                 {
                     // only check framebuffer size if we have a known encoding, cause else it could corrupt the buffer
                     CheckFramebufferSize(ev.Connection, x + w, y + h);
@@ -80,7 +82,7 @@ namespace VNCSniffer.Core.Messages.Server
                         var status = enc.Parse(ev, e, ref index);
                         if (status == ProcessStatus.NeedsMoreBytes)
                         {
-                            //FIXME: also update here cause if we get a huge fuckin update (ie hextile on 4k) we will be stuck here for some time
+                            //FIXME: also update here cause if we get a huge fuckin update (ie hextile on 4k) we will be stuck here for some time. this could be fixed by requesting more bytes in func or parsing all at once
                             ev.Connection.RaiseFramebufferRefreshEvent();
                             return ProcessStatus.NeedsMoreBytes;
                         }
@@ -100,9 +102,8 @@ namespace VNCSniffer.Core.Messages.Server
                 {
                     Debug.Fail($"Encoding {encoding} not supported");
                     return ProcessStatus.Handled; // stop, so we dont corrupt anything else
-                    //TODO: break? fallthrough and assume length is 0?
                 }
-                rectangles.Add(new Rectangle() { x = x, y = y, w = w, h = h, encoding = encoding });
+                rectangles.Add(rectangle);
             }
             ev.Log($"FramebufferUpdate: Rectangles ({numberOfRectangles}): {string.Join(";", rectangles)}");
             // notify that the framebuffer should be refreshed
