@@ -97,6 +97,16 @@ namespace VNCSniffer.Core
 
         public IInjectionDevice? Device;
 
+        // last state info
+        public int lastRectangle = -1; // the (number) index of last rectangle
+        public int lastRectangleIndex = 0; // the data index of the last rectangle's start
+        public int lastIndex = 0; // the last safe index inside a encoding
+        // hextile state info
+        public int lastRow = 0;
+        public int lastColumn = 0;
+        public Color? lastBGColor = null;
+        public Color? lastFGColor = null;
+
         public void LogData(Participant source, Participant dest, string text)
         {
             var sourcePrefix = "";

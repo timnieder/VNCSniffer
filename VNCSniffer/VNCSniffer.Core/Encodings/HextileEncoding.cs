@@ -32,12 +32,26 @@ namespace VNCSniffer.Core.Encodings
             Color? fgColor = null;
             var tileX = ev.x;
             var tileY = ev.y;
-            for (var i = 0; i < numTilesRow; i++, tileY += 16)
+            var startRow = 0;
+            var startColumn = 0;
+            if (e.Connection.lastRectangle != -1)
             {
+                startRow = e.Connection.lastRow;
+                startColumn = e.Connection.lastColumn;
+                bgColor = e.Connection.lastBGColor;
+                fgColor = e.Connection.lastFGColor;
+                tileY += (ushort)(startRow * 16);
+                tileX += (ushort)(startColumn * 16);
+            }
+            for (var i = startRow; i < numTilesRow; i++, tileY += 16)
+            {
+                e.Connection.lastRow = i;
                 // the last row can be smaller than 16px high
                 var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % 16) : (ushort)16;
-                for (var j = 0; j < numTilesColumn; j++, tileX += 16)
+                for (var j = (i == startRow ? startColumn : 0); j < numTilesColumn; j++, tileX += 16)
                 {
+                    e.Connection.lastColumn = j;
+                    e.Connection.lastIndex = index;
                     // may not have enough bytes for the header
                     if (e.Data.Length < index + 1)
                         return ProcessStatus.NeedsMoreBytes;
@@ -68,6 +82,7 @@ namespace VNCSniffer.Core.Encodings
 
                         // parse bg color
                         bgColor = new Color(e.Data[index..(index + bpp)], format, bpp, e.Connection.FramebufferPixelFormat);
+                        e.Connection.lastBGColor = bgColor;
                         index += bpp;
                     }
 
@@ -79,6 +94,7 @@ namespace VNCSniffer.Core.Encodings
 
                         // parse fg color
                         fgColor = new Color(e.Data[index..(index + bpp)], format, bpp, e.Connection.FramebufferPixelFormat);
+                        e.Connection.lastFGColor = fgColor;
                         index += bpp;
                     }
 

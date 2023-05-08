@@ -54,11 +54,18 @@ namespace VNCSniffer.Core.Messages.Server
             if (ev.Data.Length < end) //INFO: < cause there should be pixeldata after the rectangle headers
                 return ProcessStatus.Invalid;
 
-            var index = 4;
+            var index = 4; // start after header
             var rectangles = new List<Rectangle>();
-            //TODO: save the current state (i and buffer index) if we need more data but have parsed smth already, so we dont double parse
-            for (var i = 0; i < numberOfRectangles; i++)
+            var lastRectangle = 0;
+            if (ev.Connection.lastRectangle > -1)
             {
+                lastRectangle = ev.Connection.lastRectangle;
+                index = ev.Connection.lastRectangleIndex;
+            }
+            //TODO: save the current state (i and buffer index) if we need more data but have parsed smth already, so we dont double parse
+            for (var i = lastRectangle; i < numberOfRectangles; i++)
+            {
+                ev.Connection.lastRectangleIndex = index;
                 if (ev.Data.Length <= index + 12) // header check
                     return ProcessStatus.NeedsMoreBytes;
                 // Parse header
@@ -78,12 +85,18 @@ namespace VNCSniffer.Core.Messages.Server
                     //TODO: if Format == null: try to guess bpp & endianess (?)
                     var e = new FramebufferUpdateEvent(x, y, w, h);
                     try 
-                    { 
+                    {
+                        if (ev.Connection.lastRectangle > -1)
+                            index = ev.Connection.lastIndex; // if we previously aborted, reset the index to the last safe state
+                        else
+                            ev.Connection.lastIndex = index; // else its a fresh rectangle, so set the safe index to the start of it
                         var status = enc.Parse(ev, e, ref index);
                         if (status == ProcessStatus.NeedsMoreBytes)
                         {
                             //FIXME: also update here cause if we get a huge fuckin update (ie hextile on 4k) we will be stuck here for some time. this could be fixed by requesting more bytes in func or parsing all at once
                             ev.Connection.RaiseFramebufferRefreshEvent();
+                            // save last rectangle
+                            ev.Connection.lastRectangle = i;
                             return ProcessStatus.NeedsMoreBytes;
                         }
                     }
@@ -93,6 +106,8 @@ namespace VNCSniffer.Core.Messages.Server
                         //TODO: handle exception during parsing
                         // problem occured, but something probably still changed, so refresh
                         ev.Connection.RaiseFramebufferRefreshEvent();
+                        // reset state
+                        ev.Connection.lastRectangle = -1;
                         return ProcessStatus.Handled;
                     }
 
@@ -101,13 +116,18 @@ namespace VNCSniffer.Core.Messages.Server
                 else
                 {
                     Debug.Fail($"Encoding {encoding} not supported");
+                    // reset state
+                    ev.Connection.lastRectangle = -1;
                     return ProcessStatus.Handled; // stop, so we dont corrupt anything else
                 }
+                ev.Connection.lastRectangle = -1;
                 rectangles.Add(rectangle);
             }
             ev.Log($"FramebufferUpdate: Rectangles ({numberOfRectangles}): {string.Join(";", rectangles)}");
             // notify that the framebuffer should be refreshed
             ev.Connection.RaiseFramebufferRefreshEvent();
+            // reset state
+            ev.Connection.lastRectangle = -1;
             return ProcessStatus.Handled;
         }
 
