@@ -47,7 +47,13 @@ namespace VNCSniffer.Core.Encodings
             {
                 e.Connection.lastRow = i;
                 // the last row can be smaller than 16px high
-                var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % 16) : (ushort)16;
+                ushort tileH = 16;
+                if (i == numTilesRow - 1)
+                {
+                    var remainder = (ushort)(ev.h % 16);
+                    if (remainder != 0)
+                        tileH = remainder;
+                }
                 for (var j = (i == startRow ? startColumn : 0); j < numTilesColumn; j++, tileX += 16)
                 {
                     e.Connection.lastColumn = j;
@@ -57,7 +63,12 @@ namespace VNCSniffer.Core.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     // last tile in a row can be smaller than 16px wide
-                    var tileW = j == numTilesColumn - 1 ? (ushort)(ev.w % 16) : (ushort)16;
+                    ushort tileW = 16;
+                    if (j == numTilesColumn - 1) {
+                        var remainder = (ushort)(ev.w % 16);
+                        if (remainder != 0)
+                            tileW = remainder;
+                    }
 
                     var header = (SubencodingMask)e.Data[index];
                     index += 1;

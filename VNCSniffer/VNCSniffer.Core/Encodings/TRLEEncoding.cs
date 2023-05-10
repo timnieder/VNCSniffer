@@ -56,7 +56,13 @@ namespace VNCSniffer.Core.Encodings
             for (var i = 0; i < numTilesRow; i++, tileY += tileSize)
             {
                 // the last row can be smaller than 16px high
-                var tileH = i == numTilesRow - 1 ? (ushort)(ev.h % tileSize) : tileSize;
+                ushort tileH = tileSize;
+                if (i == numTilesRow - 1)
+                {
+                    var remainder = (ushort)(ev.h % tileSize);
+                    if (remainder != 0)
+                        tileH = remainder;
+                }
                 for (var j = 0; j < numTilesColumn; j++, tileX += tileSize)
                 {
                     // may not have enough bytes for the header
@@ -64,7 +70,13 @@ namespace VNCSniffer.Core.Encodings
                         return ProcessStatus.NeedsMoreBytes;
 
                     // last tile in a row can be smaller than 16px wide
-                    var tileW = j == numTilesColumn - 1 ? (ushort)(ev.w % tileSize) : tileSize;
+                    ushort tileW = tileSize;
+                    if (j == numTilesColumn - 1)
+                    {
+                        var remainder = (ushort)(ev.w % tileSize);
+                        if (remainder != 0)
+                            tileW = remainder;
+                    }
 
                     var subencoding = data[index];
                     index++;
