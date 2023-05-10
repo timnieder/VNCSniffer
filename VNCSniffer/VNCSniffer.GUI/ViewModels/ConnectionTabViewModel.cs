@@ -99,8 +99,13 @@ namespace VNCSniffer.GUI.ViewModels
 
         public void OnSendButtonClick()
         {
-            var msg = PointerEvent.Build(0, 100, 100);
-            Connection.SendMessage(Connection.Client!, Connection.Server!, msg);
+            SendPointerMove(100, 100);
+        }
+
+        public void OnResetButtonClick()
+        {
+            Connection.ResetConnection(Connection.Server!, Connection.Client!);
+            Connection.ResetConnection(Connection.Client!, Connection.Server!);
         }
 
         public void SendPointerMove(ushort x, ushort y)

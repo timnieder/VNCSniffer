@@ -129,6 +129,10 @@ namespace VNCSniffer.Core
             else if (source.Matches(connection.Server))
                 conSource = connection.Server;
 
+            // check for keep alive, which are current seq - 1 //TODO: save seq number everytime and after a while migrate to conSource like with buffers
+            if (conSource?.NextSequenceNumber - 1 == seq)
+                return;
+
             conSource?.SetTCPData(seq, seq, ack, window);
 
             // read data

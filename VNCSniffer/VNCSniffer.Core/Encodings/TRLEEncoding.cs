@@ -121,6 +121,8 @@ namespace VNCSniffer.Core.Encodings
                             }
                         case SubencodingType.ReusePalette:
                             {
+                                // ZRLE check
+                                Debug.Assert(tileSize != 64);
                                 // read using palette
                                 if (palette == null)
                                     throw new Exception("Palette used before setting."); //TODO: make fail safe
@@ -179,6 +181,8 @@ namespace VNCSniffer.Core.Encodings
                             }
                         case SubencodingType.ReusePaletteRLE:
                             {
+                                // ZRLE check
+                                Debug.Assert(tileSize != 64);
                                 // read RLE using palette
                                 var handled = HandlePaletteRLE(data, ref index, connection, tileX, tileY, tileH, tileW, palette, bpp);
                                 if (handled == ProcessStatus.NeedsMoreBytes)

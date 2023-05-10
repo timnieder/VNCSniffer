@@ -177,6 +177,9 @@ namespace VNCSniffer.Core
             if (Device == null)
                 return false;
 
+            if (src == null || dst == null)
+                return false;
+
             // spoof a ethernet+ip+tcp message
             var tcpPacket = new TcpPacket(src.Port, dst.Port)
             {
@@ -228,6 +231,9 @@ namespace VNCSniffer.Core
         public bool ResetConnection(Participant src, Participant dst)
         {
             if (Device == null)
+                return false;
+
+            if (src == null || dst == null)
                 return false;
 
             // spoof a ip+tcp message

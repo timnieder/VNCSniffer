@@ -9,7 +9,9 @@
 				<Button
 					Command="{Binding OnRefreshButtonClick}" CommandParameter="{Binding #Framebuffer}">Refresh</Button>
 				<Button
-					Command="{Binding OnSendButtonClick}">Send</Button>
+					Command="{Binding OnSendButtonClick}">Send Pointer Move</Button>
+				<Button
+					Command="{Binding OnResetButtonClick}">Reset Connection</Button>
 			</StackPanel>
 			
 			<Image Grid.Row="1" Name="Framebuffer" Stretch="Uniform" Source="{Binding Bitmap}" DoubleTapped="OnImageClicked"/>
