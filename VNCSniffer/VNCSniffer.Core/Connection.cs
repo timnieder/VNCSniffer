@@ -250,7 +250,11 @@ namespace VNCSniffer.Core
                 //TODO: ip identification
                 FragmentFlags = 0b010 // dont fragment
             };
-            
+
+            // stitch packets together
+            // no tcp content
+            ipPacket.PayloadPacket = tcpPacket;
+
             if (src.MAC != null)
             {
                 var ethernetPacket = new EthernetPacket(src.MAC, dst.MAC, EthernetType.IPv4)
@@ -275,7 +279,7 @@ namespace VNCSniffer.Core
                 return false;
             }
 
-            return false;
+            return true;
         }
 
         // Drawing
