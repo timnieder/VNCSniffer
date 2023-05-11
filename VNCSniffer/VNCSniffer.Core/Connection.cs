@@ -97,6 +97,7 @@ namespace VNCSniffer.Core
 
         public IInjectionDevice? Device;
 
+        public bool gotServerInit = false;
         // last state info
         public int lastRectangle = -1; // the (number) index of last rectangle
         public int lastRectangleIndex = 0; // the data index of the last rectangle's start

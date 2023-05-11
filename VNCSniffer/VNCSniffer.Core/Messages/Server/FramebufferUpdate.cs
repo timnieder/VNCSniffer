@@ -133,6 +133,10 @@ namespace VNCSniffer.Core.Messages.Server
 
         public static void CheckFramebufferSize(Connection con, int totalWidth, int totalHeight)
         {
+            // if we got the "official" size, dont check
+            if (con.gotServerInit)
+                return;
+
             if (totalWidth > 10000 || totalHeight > 10000) //TODO: make this limit configurable
                 return;
 
